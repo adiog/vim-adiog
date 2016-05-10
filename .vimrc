@@ -29,7 +29,6 @@ Plugin 'airblade/vim-rooter'
 Plugin 'vim-scripts/a.vim'
 
 Plugin 'adiog/vim-adiog'
-Plugin 'adiog/nerdtree'
 
 "Plugin 'chrisbra/NrrwRgn'
 "Plugin 'vim-scripts/Conque-GDB'

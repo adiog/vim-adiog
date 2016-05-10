@@ -25,7 +25,6 @@ Plugin 'vim-scripts/a.vim'
 "Plugin 'airblade/vim-rooter'
 
 Plugin 'adiog/vim-adiog'
-Plugin 'adiog/nerdtree'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required

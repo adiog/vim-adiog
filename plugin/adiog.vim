@@ -382,3 +382,14 @@ set foldmethod=marker
 "let g:PaperColor_Dark_Override = { 'background' : '#1c1c1c', 'cursorline' : '#abcdef', 'matchparen' : '#3a3a3a', 'comment' : '#5f875f' }
 
 "let g:PaperColor_Light_Override = { 'background' : '#abcdef', 'cursorline' : '#dfdfff', 'matchparen' : '#d6d6d6' , 'comment' : '#8e908c' }
+"
+"
+"
+let g:NERDTreeMapOpenInTab = "t"
+let g:NERDTreeMapOpenInTabSilent = "T"
+let g:NERDTreeMapOpenSplit = "i"
+let g:NERDTreeMapOpenVSplit", "s"
+let g:NERDTreeMapPreview = "g" . NERDTreeMapActivateNode
+let g:NERDTreeMapPreviewSplit = "g" . NERDTreeMapOpenSplit
+let g:NERDTreeMapPreviewVSplit =  "g" . NERDTreeMapOpenVSplit
+let g:NERDTreeMapRefresh = "r"
