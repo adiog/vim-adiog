@@ -1,0 +1,3633 @@
+" Vim syntax file
+" Language:	TeX
+" Maintainer:	Dr. Charles E. Campbell, Jr. <NdrchipO@ScampbellPfamily.AbizM>
+" Last Change:	Aug 12, 2010 
+" Version:	57
+" URL:		http://mysite.verizon.net/astronaut/vim/index.html#vimlinks_syntax
+"
+" Notes: {{{1
+"
+" 1. If you have a \begin{verbatim} that appears to overrun its boundaries,
+"    use %stopzone.
+"
+" 2. Run-on equations ($..$ and $$..$$, particularly) can also be stopped
+"    by suitable use of %stopzone.
+"
+" 3. If you have a slow computer, you may wish to modify
+"
+"	syn sync maxlines=200
+"	syn sync minlines=50
+"
+"    to values that are more to your liking.
+"
+" 4. There is no match-syncing for $...$ and $$...$$; hence large
+"    equation blocks constructed that way may exhibit syncing problems.
+"    (there's no difference between begin/end patterns)
+"
+" 5. If you have the variable "g:tex_no_error" defined then none of the
+"    lexical error-checking will be done.
+"
+"    ie. let g:tex_no_error=1
+
+" Version Clears: {{{1
+" For version 5.x: Clear all syntax items
+" For version 6.x: Quit when a syntax file was already loaded
+if version < 600
+  syntax clear
+elseif exists("b:current_syntax")
+  finish
+endif
+scriptencoding utf-8
+
+" Define the default highlighting. {{{1
+" For version 5.7 and earlier: only when not done already
+" For version 5.8 and later: only when an item doesn't have highlighting yet
+if version >= 508 || !exists("did_tex_syntax_inits")
+ let did_tex_syntax_inits = 1
+ if version < 508
+  command -nargs=+ HiLink hi link <args>
+ else
+  command -nargs=+ HiLink hi def link <args>
+ endif
+endif
+if exists("g:tex_tex") && !exists("g:tex_no_error")
+ let g:tex_no_error= 1
+endif
+
+" let user determine which classes of concealment will be supported
+"   a=accents/ligatures d=delimiters m=math symbols  g=Greek  s=superscripts/subscripts
+if !exists("g:tex_conceal")
+ let s:tex_conceal= 'admgs'
+else
+ let s:tex_conceal= g:tex_conceal
+endif
+
+" Determine whether or not to use "*.sty" mode {{{1
+" The user may override the normal determination by setting
+"   g:tex_stylish to 1      (for    "*.sty" mode)
+"    or to           0 else (normal "*.tex" mode)
+" or on a buffer-by-buffer basis with b:tex_stylish
+let b:extfname=expand("%:e")
+if exists("g:tex_stylish")
+ let b:tex_stylish= g:tex_stylish
+elseif !exists("b:tex_stylish")
+ if b:extfname == "sty" || b:extfname == "cls" || b:extfname == "clo" || b:extfname == "dtx" || b:extfname == "ltx"
+  let b:tex_stylish= 1
+ else
+  let b:tex_stylish= 0
+ endif
+endif
+
+" handle folding {{{1
+if !exists("g:tex_fold_enabled")
+ let g:tex_fold_enabled= 0
+elseif g:tex_fold_enabled && !has("folding")
+ let g:tex_fold_enabled= 0
+ echomsg "Ignoring g:tex_fold_enabled=".g:tex_fold_enabled."; need to re-compile vim for +fold support"
+endif
+if g:tex_fold_enabled && &fdm == "manual"
+ setl fdm=syntax
+endif
+
+" (La)TeX keywords: only use the letters a-zA-Z {{{1
+" but _ is the only one that causes problems.
+if version < 600
+  set isk-=_
+  if b:tex_stylish
+    set isk+=@
+  endif
+else
+  setlocal isk-=_
+  if b:tex_stylish
+    setlocal isk+=@
+  endif
+endif
+
+" Clusters: {{{1
+" --------
+syn cluster texCmdGroup		contains=texCmdBody,texComment,texDefParm,texDelimiter,texDocType,texInput,texLength,texLigature,texMathDelim,texMathOper,texNewCmd,texNewEnv,texRefZone,texSection,texSectionMarker,texSectionName,texSpecialChar,texStatement,texString,texTypeSize,texTypeStyle
+if !exists("g:tex_no_error")
+ syn cluster texCmdGroup	add=texMathError
+endif
+syn cluster texEnvGroup		contains=texMatcher,texMathDelim,texSpecialChar,texStatement
+syn cluster texFoldGroup	contains=texAccent,texBadMath,texComment,texDefCmd,texDelimiter,texDocType,texInput,texInputFile,texLength,texLigature,texMatcher,texMathZoneV,texMathZoneW,texMathZoneX,texMathZoneY,texMathZoneZ,texNewCmd,texNewEnv,texOnlyMath,texOption,texParen,texRefZone,texSection,texSectionMarker,texSectionZone,texSpaceCode,texSpecialChar,texStatement,texString,texTypeSize,texTypeStyle,texZone,@texMathZones,texTitle,texAbstract
+syn cluster texMatchGroup	contains=texAccent,texBadMath,texComment,texDefCmd,texDelimiter,texDocType,texInput,texLength,texLigature,texMatcher,texNewCmd,texNewEnv,texOnlyMath,texParen,texRefZone,texSection,texSpecialChar,texStatement,texString,texTypeSize,texTypeStyle,texZone,texInputFile,texOption,@Spell
+syn cluster texStyleGroup	contains=texAccent,texBadMath,texComment,texDefCmd,texDelimiter,texDocType,texInput,texLength,texLigature,texNewCmd,texNewEnv,texOnlyMath,texParen,texRefZone,texSection,texSpecialChar,texStatement,texString,texTypeSize,texTypeStyle,texZone,texInputFile,texOption,texStyleStatement,@Spell,texStyleMatcher
+syn cluster texRefGroup		contains=texMatcher,texComment,texDelimiter
+if !exists("tex_no_math")
+ syn cluster texMathZones	contains=texMathZoneV,texMathZoneW,texMathZoneX,texMathZoneY,texMathZoneZ
+ syn cluster texMatchGroup	add=@texMathZones
+ syn cluster texMathDelimGroup	contains=texMathDelimBad,texMathDelimKey,texMathDelimSet1,texMathDelimSet2
+ syn cluster texMathMatchGroup	contains=@texMathZones,texComment,texDefCmd,texDelimiter,texDocType,texInput,texLength,texLigature,texMathDelim,texMathMatcher,texMathOper,texNewCmd,texNewEnv,texRefZone,texSection,texSpecialChar,texStatement,texString,texTypeSize,texTypeStyle,texZone
+ syn cluster texMathZoneGroup	contains=texComment,texDelimiter,texLength,texMathDelim,texMathMatcher,texMathOper,texMathSymbol,texMathText,texRefZone,texSpecialChar,texStatement,texTypeSize,texTypeStyle
+ if !exists("g:tex_no_error")
+  syn cluster texMathMatchGroup	add=texMathError
+  syn cluster texMathZoneGroup	add=texMathError
+ endif
+ syn cluster texMathZoneGroup add=@NoSpell
+ " following used in the \part \chapter \section \subsection \subsubsection
+ " \paragraph \subparagraph \author \title highlighting
+ syn cluster texDocGroup		contains=texPartZone,@texPartGroup
+ syn cluster texPartGroup		contains=texChapterZone,texSectionZone,texParaZone
+ syn cluster texChapterGroup		contains=texSectionZone,texParaZone
+ syn cluster texSectionGroup		contains=texSubSectionZone,texParaZone
+ syn cluster texSubSectionGroup		contains=texSubSubSectionZone,texParaZone
+ syn cluster texSubSubSectionGroup	contains=texParaZone
+ syn cluster texParaGroup		contains=texSubParaZone
+ if has("conceal") && &enc == 'utf-8'
+  syn cluster texMathZoneGroup	add=texGreek,texSuperscript,texSubscript,texMathSymbol
+  syn cluster texMathMatchGroup	add=texGreek,texSuperscript,texSubscript,texMathSymbol
+ endif
+endif
+
+" Try to flag {} and () mismatches: {{{1
+if !exists("g:tex_no_error")
+ syn region texMatcher		matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]"	end="}"		contains=@texMatchGroup,texError
+ syn region texMatcher		matchgroup=Delimiter start="\["				end="]"		contains=@texMatchGroup,texError
+else
+ syn region texMatcher		matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]"	end="}"		contains=@texMatchGroup
+ syn region texMatcher		matchgroup=Delimiter start="\["				end="]"		contains=@texMatchGroup
+endif
+syn region texParen		start="("						end=")"		contains=@texMatchGroup,@Spell
+if !exists("g:tex_no_error")
+ syn match  texError		"[}\])]"
+endif
+if !exists("tex_no_math")
+ if !exists("g:tex_no_error")
+  syn match  texMathError	"}"	contained
+ endif
+ syn region texMathMatcher	matchgroup=Delimiter start="{"  skip="\\\\\|\\}"  end="}" end="%stopzone\>" contained contains=@texMathMatchGroup
+endif
+
+" TeX/LaTeX keywords: {{{1
+" Instead of trying to be All Knowing, I just match \..alphameric..
+" Note that *.tex files may not have "@" in their \commands
+if exists("g:tex_tex") || b:tex_stylish
+  syn match texStatement	"\\[a-zA-Z@]\+"
+else
+  syn match texStatement	"\\\a\+"
+  if !exists("g:tex_no_error")
+   syn match texError		"\\\a*@[a-zA-Z@]*"
+  endif
+endif
+
+" TeX/LaTeX delimiters: {{{1
+syn match texDelimiter		"&"
+syn match texDelimiter		"\\\\"
+
+" Tex/Latex Options: {{{1
+syn match texOption	"[^\\]\zs#\d\+\|^#\d\+"
+
+" texAccent (tnx to Karim Belabas) avoids annoying highlighting for accents: {{{1
+if b:tex_stylish
+  syn match texAccent		"\\[bcdvuH][^a-zA-Z@]"me=e-1
+  syn match texLigature		"\\\([ijolL]\|ae\|oe\|ss\|AA\|AE\|OE\)[^a-zA-Z@]"me=e-1
+else
+  syn match texAccent		"\\[bcdvuH]\A"me=e-1
+  syn match texLigature		"\\\([ijolL]\|ae\|oe\|ss\|AA\|AE\|OE\)\A"me=e-1
+endif
+syn match texAccent		"\\[bcdvuH]$"
+syn match texAccent		+\\[=^.\~"`']+
+syn match texAccent		+\\['=t'.c^ud"vb~Hr]{\a}+
+syn match texLigature		"\\\([ijolL]\|ae\|oe\|ss\|AA\|AE\|OE\)$"
+
+" \begin{}/\end{} section markers: {{{1
+syn match  texSectionMarker	"\\begin\>\|\\end\>" nextgroup=texSectionName
+syn region texSectionName	matchgroup=Delimiter start="{" end="}"  contained	nextgroup=texSectionModifier	contains=texComment
+syn region texSectionModifier	matchgroup=Delimiter start="\[" end="]" contained	contains=texComment
+
+" \documentclass, \documentstyle, \usepackage: {{{1
+syn match  texDocType		"\\documentclass\>\|\\documentstyle\>\|\\usepackage\>"	nextgroup=texSectionName,texDocTypeArgs
+syn region texDocTypeArgs	matchgroup=Delimiter start="\[" end="]"			contained	nextgroup=texSectionName	contains=texComment
+
+" Preamble syntax-based folding support: {{{1
+if g:tex_fold_enabled && has("folding")
+ syn region texPreamble	transparent fold	start='\zs\\documentclass\>' end='\ze\\begin{document}'	contains=texStyle,@texMatchGroup
+endif
+
+" TeX input: {{{1
+syn match texInput		"\\input\s\+[a-zA-Z/.0-9_^]\+"hs=s+7				contains=texStatement
+syn match texInputFile		"\\include\(graphics\|list\)\=\(\[.\{-}\]\)\=\s*{.\{-}}"	contains=texStatement,texInputCurlies,texInputFileOpt
+syn match texInputFile		"\\\(epsfig\|input\|usepackage\)\s*\(\[.*\]\)\={.\{-}}"		contains=texStatement,texInputCurlies,texInputFileOpt
+syn match texInputCurlies	"[{}]"								contained
+syn region texInputFileOpt	matchgroup=Delimiter start="\[" end="\]"			contained	contains=texComment
+
+" Type Styles (LaTeX 2.09): {{{1
+syn match texTypeStyle		"\\rm\>"
+syn match texTypeStyle		"\\em\>"
+syn match texTypeStyle		"\\bf\>"
+syn match texTypeStyle		"\\it\>"
+syn match texTypeStyle		"\\sl\>"
+syn match texTypeStyle		"\\sf\>"
+syn match texTypeStyle		"\\sc\>"
+syn match texTypeStyle		"\\tt\>"
+
+" Type Styles: attributes, commands, families, etc (LaTeX2E): {{{1
+syn match texTypeStyle		"\\textbf\>"
+syn match texTypeStyle		"\\textit\>"
+syn match texTypeStyle		"\\textmd\>"
+syn match texTypeStyle		"\\textrm\>"
+syn match texTypeStyle		"\\textsc\>"
+syn match texTypeStyle		"\\textsf\>"
+syn match texTypeStyle		"\\textsl\>"
+syn match texTypeStyle		"\\texttt\>"
+syn match texTypeStyle		"\\textup\>"
+syn match texTypeStyle		"\\emph\>"
+
+syn match texTypeStyle		"\\mathbb\>"
+syn match texTypeStyle		"\\mathbf\>"
+syn match texTypeStyle		"\\mathcal\>"
+syn match texTypeStyle		"\\mathfrak\>"
+syn match texTypeStyle		"\\mathit\>"
+syn match texTypeStyle		"\\mathnormal\>"
+syn match texTypeStyle		"\\mathrm\>"
+syn match texTypeStyle		"\\mathsf\>"
+syn match texTypeStyle		"\\mathtt\>"
+
+syn match texTypeStyle		"\\rmfamily\>"
+syn match texTypeStyle		"\\sffamily\>"
+syn match texTypeStyle		"\\ttfamily\>"
+
+syn match texTypeStyle		"\\itshape\>"
+syn match texTypeStyle		"\\scshape\>"
+syn match texTypeStyle		"\\slshape\>"
+syn match texTypeStyle		"\\upshape\>"
+
+syn match texTypeStyle		"\\bfseries\>"
+syn match texTypeStyle		"\\mdseries\>"
+
+" Some type sizes: {{{1
+syn match texTypeSize		"\\tiny\>"
+syn match texTypeSize		"\\scriptsize\>"
+syn match texTypeSize		"\\footnotesize\>"
+syn match texTypeSize		"\\small\>"
+syn match texTypeSize		"\\normalsize\>"
+syn match texTypeSize		"\\large\>"
+syn match texTypeSize		"\\Large\>"
+syn match texTypeSize		"\\LARGE\>"
+syn match texTypeSize		"\\huge\>"
+syn match texTypeSize		"\\Huge\>"
+
+" Spacecodes (TeX'isms): {{{1
+" \mathcode`\^^@="2201  \delcode`\(="028300  \sfcode`\)=0 \uccode`X=`X  \lccode`x=`x
+syn match texSpaceCode		"\\\(math\|cat\|del\|lc\|sf\|uc\)code`"me=e-1 nextgroup=texSpaceCodeChar
+syn match texSpaceCodeChar    "`\\\=.\(\^.\)\==\(\d\|\"\x\{1,6}\|`.\)"	contained
+
+" Sections, subsections, etc: {{{1
+if g:tex_fold_enabled && has("folding")
+ syn region texDocZone			matchgroup=texSection start='\\begin\s*{\s*document\s*}' end='\\end\s*{\s*document\s*}'											fold contains=@texFoldGroup,@texDocGroup,@Spell
+ syn region texPartZone			matchgroup=texSection start='\\part\>'			 end='\ze\s*\\\%(part\>\|end\s*{\s*document\s*}\)'								fold contains=@texFoldGroup,@texPartGroup,@Spell
+ syn region texChapterZone		matchgroup=texSection start='\\chapter\>'		 end='\ze\s*\\\%(chapter\>\|part\>\|end\s*{\s*document\s*}\)'							fold contains=@texFoldGroup,@texChapterGroup,@Spell
+ syn region texSectionZone		matchgroup=texSection start='\\section\>'		 end='\ze\s*\\\%(section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'					fold contains=@texFoldGroup,@texSectionGroup,@Spell
+ syn region texSubSectionZone		matchgroup=texSection start='\\subsection\>'		 end='\ze\s*\\\%(\%(sub\)\=section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'				fold contains=@texFoldGroup,@texSubSectionGroup,@Spell
+ syn region texSubSubSectionZone	matchgroup=texSection start='\\subsubsection\>'		 end='\ze\s*\\\%(\%(sub\)\{,2}section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'				fold contains=@texFoldGroup,@texSubSubSectionGroup,@Spell
+ syn region texParaZone			matchgroup=texSection start='\\paragraph\>'		 end='\ze\s*\\\%(paragraph\>\|\%(sub\)*section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'			fold contains=@texFoldGroup,@texParaGroup,@Spell
+ syn region texSubParaZone		matchgroup=texSection start='\\subparagraph\>'		 end='\ze\s*\\\%(\%(sub\)\=paragraph\>\|\%(sub\)*section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'	fold contains=@texFoldGroup,@Spell
+ syn region texTitle			matchgroup=texSection start='\\\%(author\|title\)\>\s*{' end='}'													fold contains=@texFoldGroup,@Spell
+ syn region texAbstract			matchgroup=texSection start='\\begin\s*{\s*abstract\s*}' end='\\end\s*{\s*abstract\s*}'											fold contains=@texFoldGroup,@Spell
+else
+ syn region texDocZone			matchgroup=texSection start='\\begin\s*{\s*document\s*}' end='\\end\s*{\s*document\s*}'											contains=@texFoldGroup,@texDocGroup,@Spell
+ syn region texPartZone			matchgroup=texSection start='\\part\>'			 end='\ze\s*\\\%(part\>\|end\s*{\s*document\s*}\)'								contains=@texFoldGroup,@texPartGroup,@Spell
+ syn region texChapterZone		matchgroup=texSection start='\\chapter\>'		 end='\ze\s*\\\%(chapter\>\|part\>\|end\s*{\s*document\s*}\)'							contains=@texFoldGroup,@texChapterGroup,@Spell
+ syn region texSectionZone		matchgroup=texSection start='\\section\>'		 end='\ze\s*\\\%(section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'					contains=@texFoldGroup,@texSectionGroup,@Spell
+ syn region texSubSectionZone		matchgroup=texSection start='\\subsection\>'		 end='\ze\s*\\\%(\%(sub\)\=section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'				contains=@texFoldGroup,@texSubSectionGroup,@Spell
+ syn region texSubSubSectionZone	matchgroup=texSection start='\\subsubsection\>'		 end='\ze\s*\\\%(\%(sub\)\{,2}section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'				contains=@texFoldGroup,@texSubSubSectionGroup,@Spell
+ syn region texParaZone			matchgroup=texSection start='\\paragraph\>'		 end='\ze\s*\\\%(paragraph\>\|\%(sub\)*section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'			contains=@texFoldGroup,@texParaGroup,@Spell
+ syn region texSubParaZone		matchgroup=texSection start='\\subparagraph\>'		 end='\ze\s*\\\%(\%(sub\)\=paragraph\>\|\%(sub\)*section\>\|chapter\>\|part\>\|end\s*{\s*document\s*}\)'	contains=@texFoldGroup,@Spell
+ syn region texTitle			matchgroup=texSection start='\\\%(author\|title\)\>\s*{' end='}'													contains=@texFoldGroup,@Spell
+ syn region texAbstract			matchgroup=texSection start='\\begin\s*{\s*abstract\s*}' end='\\end\s*{\s*abstract\s*}'											contains=@texFoldGroup,@Spell
+endif
+
+" Bad Math (mismatched): {{{1
+if !exists("tex_no_math")
+ syn match texBadMath		"\\end\s*{\s*\(array\|gathered\|bBpvV]matrix\|split\|subequations\|smallmatrix\|xxalignat\)\s*}"
+ syn match texBadMath		"\\end\s*{\s*\(align\|alignat\|displaymath\|displaymath\|eqnarray\|equation\|flalign\|gather\|math\|multline\|xalignat\)\*\=\s*}"
+ syn match texBadMath		"\\[\])]"
+endif
+
+" Math Zones: {{{1
+if !exists("tex_no_math")
+ " TexNewMathZone: function creates a mathzone with the given suffix and mathzone name. {{{2
+ "                 Starred forms are created if starform is true.  Starred
+ "                 forms have syntax group and synchronization groups with a
+ "                 "S" appended.  Handles: cluster, syntax, sync, and HiLink.
+ fun! TexNewMathZone(sfx,mathzone,starform)
+   let grpname  = "texMathZone".a:sfx
+   let syncname = "texSyncMathZone".a:sfx
+   if g:tex_fold_enabled
+    let foldcmd= " fold"
+   else
+    let foldcmd= ""
+   endif
+   exe "syn cluster texMathZones add=".grpname
+   exe 'syn region '.grpname.' start='."'".'\\begin\s*{\s*'.a:mathzone.'\s*}'."'".' end='."'".'\\end\s*{\s*'.a:mathzone.'\s*}'."'".' keepend contains=@texMathZoneGroup'.foldcmd
+   exe 'syn sync match '.syncname.' grouphere '.grpname.' "\\begin\s*{\s*'.a:mathzone.'\*\s*}"'
+   exe 'syn sync match '.syncname.' grouphere '.grpname.' "\\begin\s*{\s*'.a:mathzone.'\*\s*}"'
+   exe 'hi def link '.grpname.' texMath'
+   if a:starform
+    let grpname  = "texMathZone".a:sfx.'S'
+    let syncname = "texSyncMathZone".a:sfx.'S'
+    exe "syn cluster texMathZones add=".grpname
+    exe 'syn region '.grpname.' start='."'".'\\begin\s*{\s*'.a:mathzone.'\*\s*}'."'".' end='."'".'\\end\s*{\s*'.a:mathzone.'\*\s*}'."'".' keepend contains=@texMathZoneGroup'.foldcmd
+    exe 'syn sync match '.syncname.' grouphere '.grpname.' "\\begin\s*{\s*'.a:mathzone.'\*\s*}"'
+    exe 'syn sync match '.syncname.' grouphere '.grpname.' "\\begin\s*{\s*'.a:mathzone.'\*\s*}"'
+    exe 'hi def link '.grpname.' texMath'
+   endif
+ endfun
+
+ " Standard Math Zones: {{{2
+ call TexNewMathZone("A","align",1)
+ call TexNewMathZone("B","alignat",1)
+ call TexNewMathZone("C","displaymath",1)
+ call TexNewMathZone("D","eqnarray",1)
+ call TexNewMathZone("E","equation",1)
+ call TexNewMathZone("F","flalign",1)
+ call TexNewMathZone("G","gather",1)
+ call TexNewMathZone("H","math",1)
+ call TexNewMathZone("I","multline",1)
+ call TexNewMathZone("J","subequations",0)
+ call TexNewMathZone("K","xalignat",1)
+ call TexNewMathZone("L","xxalignat",0)
+
+ " Inline Math Zones: {{{2
+ if has("conceal") && &enc == 'utf-8' && s:tex_conceal =~ 'd'
+  syn region texMathZoneV	matchgroup=Delimiter start="\\("			matchgroup=Delimiter end="\\)\|%stopzone\>"	keepend concealends contains=@texMathZoneGroup
+  syn region texMathZoneW	matchgroup=Delimiter start="\\\["			matchgroup=Delimiter end="\\]\|%stopzone\>"	keepend concealends contains=@texMathZoneGroup
+  syn region texMathZoneX	matchgroup=Delimiter start="\$" skip="\\\\\|\\\$"	matchgroup=Delimiter end="\$" end="%stopzone\>"		concealends contains=@texMathZoneGroup
+  syn region texMathZoneY	matchgroup=Delimiter start="\$\$" 			matchgroup=Delimiter end="\$\$" end="%stopzone\>"	concealends keepend		contains=@texMathZoneGroup
+ else
+  syn region texMathZoneV	matchgroup=Delimiter start="\\("			matchgroup=Delimiter end="\\)\|%stopzone\>"	keepend contains=@texMathZoneGroup
+  syn region texMathZoneW	matchgroup=Delimiter start="\\\["			matchgroup=Delimiter end="\\]\|%stopzone\>"	keepend contains=@texMathZoneGroup
+  syn region texMathZoneX	matchgroup=Delimiter start="\$" skip="\\\\\|\\\$"	matchgroup=Delimiter end="\$" end="%stopzone\>"	contains=@texMathZoneGroup
+  syn region texMathZoneY	matchgroup=Delimiter start="\$\$" 			matchgroup=Delimiter end="\$\$" end="%stopzone\>"	keepend		contains=@texMathZoneGroup
+ endif
+ syn region texMathZoneZ	matchgroup=texStatement start="\\ensuremath\s*{"	matchgroup=texStatement end="}" end="%stopzone\>"	contains=@texMathZoneGroup
+
+ syn match texMathOper		"[_^=]" contained
+
+ " Text Inside Math Zones: {{{2
+ syn region texMathText matchgroup=texStatement start='\\\(\(inter\)\=text\|mbox\)\s*{'	end='}'	contains=@texFoldGroup,@Spell
+
+ " \left..something.. and \right..something.. support: {{{2
+ syn match   texMathDelimBad	contained		"\S"
+ if has("conceal") && &enc == 'utf-8' && s:tex_conceal =~ 'm'
+  syn match   texMathDelim	contained		"\\left\\{\>"	skipwhite nextgroup=texMathDelimSet1,texMathDelimSet2,texMathDelimBad contains=texMathSymbol cchar={
+  syn match   texMathDelim	contained		"\\right\\}\>"	skipwhite nextgroup=texMathDelimSet1,texMathDelimSet2,texMathDelimBad contains=texMathSymbol cchar=}
+ else
+  syn match   texMathDelim	contained		"\\\(left\|right\)\>"	skipwhite nextgroup=texMathDelimSet1,texMathDelimSet2,texMathDelimBad
+ endif
+ syn match   texMathDelim	contained		"\\\([bB]igg\=[lr]\)\>"			skipwhite nextgroup=texMathDelimSet1,texMathDelimSet2,texMathDelimBad
+ syn match   texMathDelim	contained		"\\\(left\|right\)arrow\>\|\<\([aA]rrow\|brace\)\=vert\>"
+ syn match   texMathDelim	contained		"\\lefteqn\>"
+ syn match   texMathDelimSet2	contained	"\\"		nextgroup=texMathDelimKey,texMathDelimBad
+ syn match   texMathDelimSet1	contained	"[<>()[\]|/.]\|\\[{}|]"
+ syn keyword texMathDelimKey	contained	backslash       lceil           lVert           rgroup          uparrow
+ syn keyword texMathDelimKey	contained	downarrow       lfloor          rangle          rmoustache      Uparrow
+ syn keyword texMathDelimKey	contained	Downarrow       lgroup          rbrace          rvert           updownarrow
+ syn keyword texMathDelimKey	contained	langle          lmoustache      rceil           rVert           Updownarrow
+ syn keyword texMathDelimKey	contained	lbrace          lvert           rfloor
+endif
+
+" Special TeX characters  ( \$ \& \% \# \{ \} \_ \S \P ) : {{{1
+syn match texSpecialChar	"\\[$&%#{}_]"
+if b:tex_stylish
+  syn match texSpecialChar	"\\[SP@][^a-zA-Z@]"me=e-1
+else
+  syn match texSpecialChar	"\\[SP@]\A"me=e-1
+endif
+syn match texSpecialChar	"\\\\"
+if !exists("tex_no_math")
+ syn match texOnlyMath		"[_^]"
+endif
+syn match texSpecialChar	"\^\^[0-9a-f]\{2}\|\^\^\S"
+
+" Comments: {{{1
+"    Normal TeX LaTeX     :   %....
+"    Documented TeX Format:  ^^A...	-and-	leading %s (only)
+if !exists("g:tex_comment_nospell") || !g:tex_comment_nospell
+ syn cluster texCommentGroup	contains=texTodo,@Spell
+else
+ syn cluster texCommentGroup	contains=texTodo,@NoSpell
+endif
+syn case ignore
+syn keyword texTodo		contained		combak	fixme	todo	xxx
+syn case match
+if b:extfname == "dtx"
+  syn match texComment		"\^\^A.*$"	contains=@texCommentGroup
+  syn match texComment		"^%\+"		contains=@texCommentGroup
+else
+  if g:tex_fold_enabled
+   " allows syntax-folding of 2 or more contiguous comment lines
+   " single-line comments are not folded
+   syn match  texComment	"%.*$"		contains=@texCommentGroup
+   syn region texComment	start="^\zs\s*%.*\_s*%"	skip="^\s*%"	end='^\ze\s*[^%]' fold
+  else
+   syn match texComment		"%.*$"		contains=@texCommentGroup
+  endif
+endif
+
+" Separate lines used for verb` and verb# so that the end conditions {{{1
+" will appropriately terminate.
+" If g:tex_verbspell exists, then verbatim texZones will permit spellchecking there.
+if exists("g:tex_verbspell") && g:tex_verbspell
+ syn region texZone		start="\\begin{[vV]erbatim}"		end="\\end{[vV]erbatim}\|%stopzone\>"	contains=@Spell
+ " listings package:
+ syn region texZone		start="\\begin{lstlisting}"		end="\\end{lstlisting}\|%stopzone\>"	contains=@Spell
+ " moreverb package:
+ syn region texZone		start="\\begin{verbatimtab}"		end="\\end{verbatimtab}\|%stopzone\>"	contains=@Spell
+ syn region texZone		start="\\begin{verbatimwrite}"		end="\\end{verbatimwrite}\|%stopzone\>"	contains=@Spell
+ syn region texZone		start="\\begin{boxedverbatim}"		end="\\end{boxedverbatim}\|%stopzone\>"	contains=@Spell
+ if version < 600
+  syn region texZone		start="\\verb\*\=`"			end="`\|%stopzone\>"			contains=@Spell
+  syn region texZone		start="\\verb\*\=#"			end="#\|%stopzone\>"			contains=@Spell
+ else
+   if b:tex_stylish
+    syn region texZone		start="\\verb\*\=\z([^\ta-zA-Z@]\)"	end="\z1\|%stopzone\>"			contains=@Spell
+   else
+    syn region texZone		start="\\verb\*\=\z([^\ta-zA-Z]\)"	end="\z1\|%stopzone\>"			contains=@Spell
+   endif
+ endif
+else
+ syn region texZone		start="\\begin{[vV]erbatim}"		end="\\end{[vV]erbatim}\|%stopzone\>"
+ " listings package:
+ syn region texZone		start="\\begin{lstlisting}"		end="\\end{lstlisting}\|%stopzone\>"
+ " moreverb package:
+ syn region texZone		start="\\begin{verbatimtab}"		end="\\end{verbatimtab}\|%stopzone\>"
+ syn region texZone		start="\\begin{verbatimwrite}"		end="\\end{verbatimwrite}\|%stopzone\>"
+ syn region texZone		start="\\begin{boxedverbatim}"		end="\\end{boxedverbatim}\|%stopzone\>"
+ if version < 600
+  syn region texZone		start="\\verb\*\=`"			end="`\|%stopzone\>"
+  syn region texZone		start="\\verb\*\=#"			end="#\|%stopzone\>"
+ else
+   if b:tex_stylish
+     syn region texZone		start="\\verb\*\=\z([^\ta-zA-Z@]\)"	end="\z1\|%stopzone\>"
+   else
+     syn region texZone		start="\\verb\*\=\z([^\ta-zA-Z]\)"	end="\z1\|%stopzone\>"
+   endif
+ endif
+endif
+
+" Tex Reference Zones: {{{1
+syn region texZone		matchgroup=texStatement start="@samp{"			end="}\|%stopzone\>"	contains=@texRefGroup
+syn region texRefZone		matchgroup=texStatement start="\\nocite{"		end="}\|%stopzone\>"	contains=@texRefGroup
+syn region texRefZone		matchgroup=texStatement start="\\bibliography{"		end="}\|%stopzone\>"	contains=@texRefGroup
+syn region texRefZone		matchgroup=texStatement start="\\label{"		end="}\|%stopzone\>"	contains=@texRefGroup
+syn region texRefZone		matchgroup=texStatement start="\\\(page\|eq\)ref{"	end="}\|%stopzone\>"	contains=@texRefGroup
+syn region texRefZone		matchgroup=texStatement start="\\v\=ref{"		end="}\|%stopzone\>"	contains=@texRefGroup
+syn match  texRefZone		'\\cite\%([tp]\*\=\)\=' nextgroup=texRefOption,texCite
+syn region texRefOption	contained	matchgroup=Delimiter start='\[' end=']'		contains=@texRefGroup,texRefZone	nextgroup=texRefOption,texCite
+syn region texCite	contained	matchgroup=Delimiter start='{' end='}'		contains=@texRefGroup,texRefZone,texCite
+
+" Handle newcommand, newenvironment : {{{1
+syn match  texNewCmd				"\\newcommand\>"			nextgroup=texCmdName skipwhite skipnl
+syn region texCmdName contained matchgroup=Delimiter start="{"rs=s+1  end="}"		nextgroup=texCmdArgs,texCmdBody skipwhite skipnl
+syn region texCmdArgs contained matchgroup=Delimiter start="\["rs=s+1 end="]"		nextgroup=texCmdBody skipwhite skipnl
+syn region texCmdBody contained matchgroup=Delimiter start="{"rs=s+1 skip="\\\\\|\\[{}]"	matchgroup=Delimiter end="}" contains=@texCmdGroup
+syn match  texNewEnv				"\\newenvironment\>"			nextgroup=texEnvName skipwhite skipnl
+syn region texEnvName contained matchgroup=Delimiter start="{"rs=s+1  end="}"		nextgroup=texEnvBgn skipwhite skipnl
+syn region texEnvBgn  contained matchgroup=Delimiter start="{"rs=s+1  end="}"		nextgroup=texEnvEnd skipwhite skipnl contains=@texEnvGroup
+syn region texEnvEnd  contained matchgroup=Delimiter start="{"rs=s+1  end="}"		skipwhite skipnl contains=@texEnvGroup
+
+" Definitions/Commands: {{{1
+syn match texDefCmd				"\\def\>"				nextgroup=texDefName skipwhite skipnl
+if b:tex_stylish
+  syn match texDefName contained		"\\[a-zA-Z@]\+"				nextgroup=texDefParms,texCmdBody skipwhite skipnl
+  syn match texDefName contained		"\\[^a-zA-Z@]"				nextgroup=texDefParms,texCmdBody skipwhite skipnl
+else
+  syn match texDefName contained		"\\\a\+"				nextgroup=texDefParms,texCmdBody skipwhite skipnl
+  syn match texDefName contained		"\\\A"					nextgroup=texDefParms,texCmdBody skipwhite skipnl
+endif
+syn match texDefParms  contained		"#[^{]*"	contains=texDefParm	nextgroup=texCmdBody skipwhite skipnl
+syn match  texDefParm  contained		"#\d\+"
+
+" TeX Lengths: {{{1
+syn match  texLength		"\<\d\+\([.,]\d\+\)\=\s*\(true\)\=\s*\(bp\|cc\|cm\|dd\|em\|ex\|in\|mm\|pc\|pt\|sp\)\>"
+
+" TeX String Delimiters: {{{1
+syn match texString		"\(``\|''\|,,\)"
+
+" makeatletter -- makeatother sections
+if !exists("g:tex_no_error")
+ syn region texStyle			matchgroup=texStatement start='\\makeatletter' end='\\makeatother'	contains=@texStyleGroup contained
+ syn match  texStyleStatement		"\\[a-zA-Z@]\+"	contained
+ syn region texStyleMatcher		matchgroup=Delimiter start="{" skip="\\\\\|\\[{}]"	end="}"		contains=@texStyleGroup,texError	contained
+ syn region texStyleMatcher		matchgroup=Delimiter start="\["				end="]"		contains=@texStyleGroup,texError	contained
+endif
+
+" Conceal mode support (supports set cole=2) {{{1
+if has("conceal") && &enc == 'utf-8'
+
+ " Math Symbols {{{2
+ " (many of these symbols were contributed by Björn Winckler)
+ if s:tex_conceal =~ 'm'
+  let s:texMathList=[
+    \ ['angle'		, '∠'],
+    \ ['approx'		, '≈'],
+    \ ['ast'		, '∗'],
+    \ ['asymp'		, '≍'],
+    \ ['backepsilon'	, '∍'],
+    \ ['backsimeq'	, '≃'],
+    \ ['barwedge'	, '⊼'],
+    \ ['because'	, '∵'],
+    \ ['between'	, '≬'],
+    \ ['bigcap'		, '∩'],
+    \ ['bigcup'		, '∪'],
+    \ ['bigodot'	, '⊙'],
+    \ ['bigoplus'	, '⊕'],
+    \ ['bigotimes'	, '⊗'],
+    \ ['bigsqcup'	, '⊔'],
+    \ ['bigtriangledown', '∇'],
+    \ ['bigvee'		, '⋁'],
+    \ ['bigwedge'	, '⋀'],
+    \ ['blacksquare'	, '∎'],
+    \ ['bot'		, '⊥'],
+    \ ['boxdot'		, '⊡'],
+    \ ['boxminus'	, '⊟'],
+    \ ['boxplus'	, '⊞'],
+    \ ['boxtimes'	, '⊠'],
+    \ ['bumpeq'		, '≏'],
+    \ ['Bumpeq'		, '≎'],
+    \ ['cap'		, '∩'],
+    \ ['Cap'		, '⋒'],
+    \ ['cdot'		, '·'],
+    \ ['cdots'		, '⋯'],
+    \ ['circ'		, '∘'],
+    \ ['circeq'		, '≗'],
+    \ ['circlearrowleft', '↺'],
+    \ ['circlearrowright', '↻'],
+    \ ['circledast'	, '⊛'],
+    \ ['circledcirc'	, '⊚'],
+    \ ['complement'	, '∁'],
+    \ ['cong'		, '≅'],
+    \ ['coprod'		, '∐'],
+    \ ['cup'		, '∪'],
+    \ ['Cup'		, '⋓'],
+    \ ['curlyeqprec'	, '⋞'],
+    \ ['curlyeqsucc'	, '⋟'],
+    \ ['curlyvee'	, '⋎'],
+    \ ['curlywedge'	, '⋏'],
+    \ ['dashv'		, '⊣'],
+    \ ['diamond'	, '⋄'],
+    \ ['div'		, '÷'],
+    \ ['doteq'		, '≐'],
+    \ ['doteqdot'	, '≑'],
+    \ ['dotplus'	, '∔'],
+    \ ['dotsb'		, '⋯'],
+    \ ['dotsc'		, '…'],
+    \ ['dots'		, '…'],
+    \ ['dotsi'		, '⋯'],
+    \ ['dotso'		, '…'],
+    \ ['doublebarwedge'	, '⩞'],
+    \ ['downarrow'	, '↓'],
+    \ ['Downarrow'	, '⇓'],
+    \ ['emptyset'	, '∅'],
+    \ ['eqcirc'		, '≖'],
+    \ ['eqsim'		, '≂'],
+    \ ['eqslantgtr'	, '⪖'],
+    \ ['eqslantless'	, '⪕'],
+    \ ['equiv'		, '≡'],
+    \ ['exists'		, '∃'],
+    \ ['fallingdotseq'	, '≒'],
+    \ ['forall'		, '∀'],
+    \ ['ge'		, '≥'],
+    \ ['geq'		, '≥'],
+    \ ['geqq'		, '≧'],
+    \ ['gets'		, '←'],
+    \ ['gneqq'		, '≩'],
+    \ ['gtrdot'		, '⋗'],
+    \ ['gtreqless'	, '⋛'],
+    \ ['gtrless'	, '≷'],
+    \ ['gtrsim'		, '≳'],
+    \ ['hookleftarrow'	, '↩'],
+    \ ['hookrightarrow'	, '↪'],
+    \ ['iiint'		, '∭'],
+    \ ['iint'		, '∬'],
+    \ ['Im'		, 'ℑ'],
+    \ ['in'		, '∈'],
+    \ ['infty'		, '∞'],
+    \ ['int'		, '∫'],
+    \ ['lceil'		, '⌈'],
+    \ ['ldots'		, '…'],
+    \ ['le'		, '≤'],
+    \ ['leftarrow'	, '⟵'],
+    \ ['Leftarrow'	, '⟸'],
+    \ ['leftarrowtail'	, '↢'],
+    \ ['left('		, '('],
+    \ ['left\['		, '['],
+    \ ['left\\{'	, '{'],
+    \ ['Leftrightarrow'	, '⇔'],
+    \ ['leftrightsquigarrow', '↭'],
+    \ ['leftthreetimes'	, '⋋'],
+    \ ['leq'		, '≤'],
+    \ ['leqq'		, '≦'],
+    \ ['lessdot'	, '⋖'],
+    \ ['lesseqgtr'	, '⋚'],
+    \ ['lesssim'	, '≲'],
+    \ ['lfloor'		, '⌊'],
+    \ ['lneqq'		, '≨'],
+    \ ['ltimes'		, '⋉'],
+    \ ['mapsto'		, '↦'],
+    \ ['measuredangle'	, '∡'],
+    \ ['mid'		, '∣'],
+    \ ['mp'		, '∓'],
+    \ ['nabla'		, '∇'],
+    \ ['ncong'		, '≇'],
+    \ ['nearrow'	, '↗'],
+    \ ['ne'		, '≠'],
+    \ ['neg'		, '¬'],
+    \ ['neq'		, '≠'],
+    \ ['nexists'	, '∄'],
+    \ ['ngeq'		, '≱'],
+    \ ['ngeqq'		, '≱'],
+    \ ['ngtr'		, '≯'],
+    \ ['ni'		, '∋'],
+    \ ['nleftarrow'	, '↚'],
+    \ ['nLeftarrow'	, '⇍'],
+    \ ['nLeftrightarrow', '⇎'],
+    \ ['nleq'		, '≰'],
+    \ ['nleqq'		, '≰'],
+    \ ['nless'		, '≮'],
+    \ ['nmid'		, '∤'],
+    \ ['notin'		, '∉'],
+    \ ['nprec'		, '⊀'],
+    \ ['nrightarrow'	, '↛'],
+    \ ['nRightarrow'	, '⇏'],
+    \ ['nsim'		, '≁'],
+    \ ['nsucc'		, '⊁'],
+    \ ['ntriangleleft'	, '⋪'],
+    \ ['ntrianglelefteq', '⋬'],
+    \ ['ntriangleright'	, '⋫'],
+    \ ['ntrianglerighteq', '⋭'],
+    \ ['nvdash'		, '⊬'],
+    \ ['nvDash'		, '⊭'],
+    \ ['nVdash'		, '⊮'],
+    \ ['nwarrow'	, '↖'],
+    \ ['odot'		, '⊙'],
+    \ ['oint'		, '∮'],
+    \ ['ominus'		, '⊖'],
+    \ ['oplus'		, '⊕'],
+    \ ['oslash'		, '⊘'],
+    \ ['otimes'		, '⊗'],
+    \ ['owns'		, '∋'],
+    \ ['partial'	, '∂'],
+    \ ['perp'		, '⊥'],
+    \ ['pitchfork'	, '⋔'],
+    \ ['pm'		, '±'],
+    \ ['precapprox'	, '⪷'],
+    \ ['prec'		, '≺'],
+    \ ['preccurlyeq'	, '≼'],
+    \ ['preceq'		, '⪯'],
+    \ ['precnapprox'	, '⪹'],
+    \ ['precneqq'	, '⪵'],
+    \ ['precsim'	, '≾'],
+    \ ['prod'		, '∏'],
+    \ ['propto'		, '∝'],
+    \ ['rceil'		, '⌉'],
+    \ ['Re'		, 'ℜ'],
+    \ ['rfloor'		, '⌋'],
+    \ ['rightarrow'	, '⟶'],
+    \ ['Rightarrow'	, '⟹'],
+    \ ['rightarrowtail'	, '↣'],
+    \ ['right)'		, ')'],
+    \ ['right]'		, ']'],
+    \ ['right\\}'	, '}'],
+    \ ['rightsquigarrow', '↝'],
+    \ ['rightthreetimes', '⋌'],
+    \ ['risingdotseq'	, '≓'],
+    \ ['rtimes'		, '⋊'],
+    \ ['searrow'	, '↘'],
+    \ ['setminus'	, '∖'],
+    \ ['sim'		, '∼'],
+    \ ['sphericalangle'	, '∢'],
+    \ ['sqcap'		, '⊓'],
+    \ ['sqcup'		, '⊔'],
+    \ ['sqsubset'	, '⊏'],
+    \ ['sqsubseteq'	, '⊑'],
+    \ ['sqsupset'	, '⊐'],
+    \ ['sqsupseteq'	, '⊒'],
+    \ ['subset'		, '⊂'],
+    \ ['Subset'		, '⋐'],
+    \ ['subseteq'	, '⊆'],
+    \ ['subseteqq'	, '⫅'],
+    \ ['subsetneq'	, '⊊'],
+    \ ['subsetneqq'	, '⫋'],
+    \ ['succapprox'	, '⪸'],
+    \ ['succ'		, '≻'],
+    \ ['succcurlyeq'	, '≽'],
+    \ ['succeq'		, '⪰'],
+    \ ['succnapprox'	, '⪺'],
+    \ ['succneqq'	, '⪶'],
+    \ ['succsim'	, '≿'],
+    \ ['sum'		, '∑'],
+    \ ['Supset'		, '⋑'],
+    \ ['supseteq'	, '⊇'],
+    \ ['supseteqq'	, '⫆'],
+    \ ['supsetneq'	, '⊋'],
+    \ ['supsetneqq'	, '⫌'],
+    \ ['surd'		, '√'],
+    \ ['swarrow'	, '↙'],
+    \ ['therefore'	, '∴'],
+    \ ['times'		, '×'],
+    \ ['to'		, '→'],
+    \ ['top'		, '⊤'],
+    \ ['triangleleft'	, '⊲'],
+    \ ['trianglelefteq'	, '⊴'],
+    \ ['triangleq'	, '≜'],
+    \ ['triangleright'	, '⊳'],
+    \ ['trianglerighteq', '⊵'],
+    \ ['twoheadleftarrow', '↞'],
+    \ ['twoheadrightarrow', '↠'],
+    \ ['uparrow'	, '↑'],
+    \ ['Uparrow'	, '⇑'],
+    \ ['updownarrow'	, '↕'],
+    \ ['Updownarrow'	, '⇕'],
+    \ ['varnothing'	, '∅'],
+    \ ['vartriangle'	, '∆'],
+    \ ['vdash'		, '⊢'],
+    \ ['vDash'		, '⊨'],
+    \ ['Vdash'		, '⊩'],
+    \ ['vdots'		, '⋮'],
+    \ ['veebar'		, '⊻'],
+    \ ['vee'		, '∨'],
+    \ ['Vvdash'		, '⊪'],
+    \ ['wedge'		, '∧'],
+    \ ['wr'		, '≀'],
+    \ ['Lparengtr'	, '⦕'],
+\ ['overbracket'	, '⎴'],
+\ ['overparen'	, '⏜'],
+\ ['overbrace'	, '⏞'],
+\ ['underbracket'	, '⎵'],
+\ ['underparen'	, '⏝'],
+\ ['underbrace'	, '⏟'],
+\ ['grave'	, '`'],
+\ ['acute'	, '´'],
+\ ['hat'	, '^'],
+\ ['tilde'	, '~'],
+\ ['bar'	, '⁻'],
+\ ['overbar'	, '⁻'],
+\ ['ocirc'	, '∘'],
+\ ['asteraccent'	, '*'],
+\ ['lparen'	, '('],
+\ ['lbrack'	, '['],
+\ ['lbrace'	, '{'],
+\ ['sqrt'	, '√'],
+\ ['cuberoot'	, '∛'],
+\ ['fourthroot'	, '∜'],
+\ ['lceil'	, '⌈'],
+\ ['lfloor'	, '⌊'],
+\ ['ulcorner'	, '⌜'],
+\ ['llcorner'	, '⌞'],
+\ ['lmoustache'	, '⎰'],
+\ ['lbrbrak'	, '〔'],
+\ ['lbag'	, '⟅'],
+\ ['longdivision'	, '⟌'],
+\ ['lBrack'	, '⟦'],
+\ ['langle'	, '⟨'],
+\ ['lAngle'	, '⟪'],
+\ ['lgroup'	, '⟮'],
+\ ['lBrace'	, '⦃'],
+\ ['lParen'	, '⦅'],
+\ ['llparenthesis'	, '⦇'],
+\ ['llangle'	, '⦉'],
+\ ['lbrackubar'	, '⦋'],
+\ ['lbrackultick'	, '⦍'],
+\ ['lbracklltick'	, '⦏'],
+\ ['langledot'	, '⦑'],
+\ ['lparenless'	, '⦓'],
+\ ['Lparengtr'	, '⦕'],
+\ ['lblkbrbrak'	, '⦗'],
+\ ['lvzigzag'	, '⧘'],
+\ ['Lvzigzag'	, '⧚'],
+\ ['lcurvyangle'	, '⧼'],
+\ ['lbrbrak'	, '〔'],
+\ ['Lbrbrak'	, '〘'],
+\ ['rparen'	, ')'],
+\ ['rbrack'	, ']'],
+\ ['rbrace'	, '}'],
+\ ['rceil'	, '⌉'],
+\ ['rfloor'	, '⌋'],
+\ ['urcorner'	, '⌝'],
+\ ['lrcorner'	, '⌟'],
+\ ['rmoustache'	, '⎱'],
+\ ['rbag'	, '⟆'],
+\ ['rBrack'	, '⟧'],
+\ ['rangle'	, '⟩'],
+\ ['rAngle'	, '⟫'],
+\ ['Rbrbrak'	, '〙'],
+\ ['rgroup'	, '⟯'],
+\ ['rBrace'	, '⦄'],
+\ ['rParen'	, '⦆'],
+\ ['rrparenthesis'	, '⦈'],
+\ ['rrangle'	, '⦊'],
+\ ['rbrackubar'	, '⦌'],
+\ ['rbracklrtick'	, '⦎'],
+\ ['rbrackurtick'	, '⦐'],
+\ ['rangledot'	, '⦒'],
+\ ['rparengtr'	, '⦔'],
+\ ['Rparenless'	, '⦖'],
+\ ['rblkbrbrak'	, '⦘'],
+\ ['rvzigzag'	, '⧙'],
+\ ['Rvzigzag'	, '⧛'],
+\ ['rcurvyangle'	, '⧽'],
+\ ['rbrbrak'	, '〕'],
+\ ['Rbrbrak'	, '〙'],
+\ ['oiint'	, '∯'],
+\ ['oiiint'	, '∰'],
+\ ['Bbbsum'	, '⅀'],
+\ ['intclockwise'	, '∱'],
+\ ['varointclockwise'	, '∳'],
+\ ['ointctrclockwise'	, '∲'],
+\ ['ointctrclockwise'	, '∲'],
+\ ['leftouterjoin'	, '⟕'],
+\ ['rightouterjoin'	, '⟖'],
+\ ['fullouterjoin'	, '⟗'],
+\ ['bigbot'	, '⟘'],
+\ ['bigtop'	, '⟙'],
+\ ['xsol'	, '⧸'],
+\ ['xbsol'	, '⧹'],
+\ ['bigcupdot'	, '⨃'],
+\ ['biguplus'	, '⨄'],
+\ ['bigsqcap'	, '⨅'],
+\ ['bigsqcup'	, '⨆'],
+\ ['conjquant'	, '⨇'],
+\ ['disjquant'	, '⨈'],
+\ ['bigtimes'	, '⨉'],
+\ ['modtwosum'	, '⨊'],
+\ ['sumint'	, '⨋'],
+\ ['iiiint'	, '⨌'],
+\ ['intbar'	, '⨍'],
+\ ['intBar'	, '⨎'],
+\ ['fint'	, '⨏'],
+\ ['cirfnint'	, '⨐'],
+\ ['awint'	, '⨑'],
+\ ['rppolint'	, '⨒'],
+\ ['scpolint'	, '⨓'],
+\ ['npolint'	, '⨔'],
+\ ['pointint'	, '⨕'],
+\ ['sqint'	, '⨖'],
+\ ['intlarhk'	, '⨗'],
+\ ['intx'	, '⨘'],
+\ ['intcap'	, '⨙'],
+\ ['intcup'	, '⨚'],
+\ ['upint'	, '⨛'],
+\ ['lowint'	, '⨜'],
+\ ['Join'	, '⨝'],
+\ ['bigtriangleleft'	, '⨞'],
+\ ['zcmp'	, '⨟'],
+\ ['zpipe'	, '⨠'],
+\ ['zproject'	, '⨡'],
+\ ['biginterleave'	, '⫼'],
+\ ['bigtalloblong'	, '⫿'],
+\ ['plus'	, '+'],
+\ ['pm'	, '±'],
+\ ['cdotp'	, '·'],
+\ ['times'	, '×'],
+\ ['div'	, '÷'],
+\ ['dagger'	, '†'],
+\ ['ddagger'	, '‡'],
+\ ['smblkcircle'	, '•'],
+\ ['tieconcat'	, '⁀'],
+\ ['fracslash'	, '⁄'],
+\ ['upand'	, '⅋'],
+\ ['minus'	, '−'],
+\ ['mp'	, '∓'],
+\ ['dotplus'	, '∔'],
+\ ['divslash'	, '∕'],
+\ ['smallsetminus'	, '∖'],
+\ ['ast'	, '∗'],
+\ ['vysmwhtcircle'	, '∘'],
+\ ['vysmblkcircle'	, '∙'],
+\ ['wedge'	, '∧'],
+\ ['vee'	, '∨'],
+\ ['cap'	, '∩'],
+\ ['cup'	, '∪'],
+\ ['dotminus'	, '∸'],
+\ ['invlazys'	, '∾'],
+\ ['wr'	, '≀'],
+\ ['cupleftarrow'	, '⊌'],
+\ ['cupdot'	, '⊍'],
+\ ['uplus'	, '⊎'],
+\ ['sqcap'	, '⊓'],
+\ ['sqcup'	, '⊔'],
+\ ['oplus'	, '⊕'],
+\ ['ominus'	, '⊖'],
+\ ['otimes'	, '⊗'],
+\ ['oslash'	, '⊘'],
+\ ['odot'	, '⊙'],
+\ ['circledcirc'	, '⊚'],
+\ ['circledast'	, '⊛'],
+\ ['circledequal'	, '⊜'],
+\ ['circleddash'	, '⊝'],
+\ ['boxplus'	, '⊞'],
+\ ['boxminus'	, '⊟'],
+\ ['boxtimes'	, '⊠'],
+\ ['boxdot'	, '⊡'],
+\ ['intercal'	, '⊺'],
+\ ['veebar'	, '⊻'],
+\ ['barwedge'	, '⊼'],
+\ ['barvee'	, '⊽'],
+\ ['smwhtdiamond'	, '⋄'],
+\ ['cdot'	, '⋅'],
+\ ['star'	, '⋆'],
+\ ['divideontimes'	, '⋇'],
+\ ['ltimes'	, '⋉'],
+\ ['rtimes'	, '⋊'],
+\ ['leftthreetimes'	, '⋋'],
+\ ['rightthreetimes'	, '⋌'],
+\ ['curlyvee'	, '⋎'],
+\ ['curlywedge'	, '⋏'],
+\ ['Cap'	, '⋒'],
+\ ['Cup'	, '⋓'],
+\ ['varbarwedge'	, '⌅'],
+\ ['vardoublebarwedge'	, '⌆'],
+\ ['obar'	, '⌽'],
+\ ['bigtriangleup'	, '△'],
+\ ['triangleright'	, '▷'],
+\ ['triangleleft'	, '◁'],
+\ ['mdlgwhtcircle'	, '○'],
+\ ['boxbar'	, '◫'],
+\ ['veedot'	, '⟇'],
+\ ['wedgedot'	, '⟑'],
+\ ['lozengeminus'	, '⟠'],
+\ ['concavediamond'	, '⟡'],
+\ ['concavediamondtickleft'	, '⟢'],
+\ ['concavediamondtickright'	, '⟣'],
+\ ['whitesquaretickleft'	, '⟤'],
+\ ['whitesquaretickright'	, '⟥'],
+\ ['typecolon'	, '⦂'],
+\ ['circlehbar'	, '⦵'],
+\ ['circledvert'	, '⦶'],
+\ ['circledparallel'	, '⦷'],
+\ ['obslash'	, '⦸'],
+\ ['operp'	, '⦹'],
+\ ['olessthan'	, '⧀'],
+\ ['ogreaterthan'	, '⧁'],
+\ ['boxdiag'	, '⧄'],
+\ ['boxbslash'	, '⧅'],
+\ ['boxast'	, '⧆'],
+\ ['boxcircle'	, '⧇'],
+\ ['boxbox'	, '⧈'],
+\ ['triangleserifs'	, '⧍'],
+\ ['hourglass'	, '⧖'],
+\ ['blackhourglass'	, '⧗'],
+\ ['shuffle'	, '⧢'],
+\ ['mdlgblklozenge'	, '⧫'],
+\ ['setminus'	, '⧵'],
+\ ['dsol'	, '⧶'],
+\ ['rsolbar'	, '⧷'],
+\ ['doubleplus'	, '⧺'],
+\ ['tripleplus'	, '⧻'],
+\ ['tplus'	, '⧾'],
+\ ['tminus'	, '⧿'],
+\ ['ringplus'	, '⨢'],
+\ ['plushat'	, '⨣'],
+\ ['simplus'	, '⨤'],
+\ ['plusdot'	, '⨥'],
+\ ['plussim'	, '⨦'],
+\ ['plussubtwo'	, '⨧'],
+\ ['plustrif'	, '⨨'],
+\ ['commaminus'	, '⨩'],
+\ ['minusdot'	, '⨪'],
+\ ['minusfdots'	, '⨫'],
+\ ['minusrdots'	, '⨬'],
+\ ['opluslhrim'	, '⨭'],
+\ ['oplusrhrim'	, '⨮'],
+\ ['vectimes'	, '⨯'],
+\ ['dottimes'	, '⨰'],
+\ ['timesbar'	, '⨱'],
+\ ['btimes'	, '⨲'],
+\ ['smashtimes'	, '⨳'],
+\ ['otimeslhrim'	, '⨴'],
+\ ['otimesrhrim'	, '⨵'],
+\ ['otimeshat'	, '⨶'],
+\ ['Otimes'	, '⨷'],
+\ ['odiv'	, '⨸'],
+\ ['triangleplus'	, '⨹'],
+\ ['triangleminus'	, '⨺'],
+\ ['triangletimes'	, '⨻'],
+\ ['intprod'	, '⨼'],
+\ ['intprodr'	, '⨽'],
+\ ['fcmp'	, '⨾'],
+\ ['amalg'	, '⨿'],
+\ ['capdot'	, '⩀'],
+\ ['uminus'	, '⩁'],
+\ ['barcup'	, '⩂'],
+\ ['barcap'	, '⩃'],
+\ ['capwedge'	, '⩄'],
+\ ['cupvee'	, '⩅'],
+\ ['cupovercap'	, '⩆'],
+\ ['capovercup'	, '⩇'],
+\ ['cupbarcap'	, '⩈'],
+\ ['capbarcup'	, '⩉'],
+\ ['twocups'	, '⩊'],
+\ ['twocaps'	, '⩋'],
+\ ['closedvarcup'	, '⩌'],
+\ ['closedvarcap'	, '⩍'],
+\ ['Sqcap'	, '⩎'],
+\ ['Sqcup'	, '⩏'],
+\ ['closedvarcupsmashprod'	, '⩐'],
+\ ['wedgeodot'	, '⩑'],
+\ ['veeodot'	, '⩒'],
+\ ['Wedge'	, '⩓'],
+\ ['Vee'	, '⩔'],
+\ ['wedgeonwedge'	, '⩕'],
+\ ['veeonvee'	, '⩖'],
+\ ['bigslopedvee'	, '⩗'],
+\ ['bigslopedwedge'	, '⩘'],
+\ ['wedgemidvert'	, '⩚'],
+\ ['veemidvert'	, '⩛'],
+\ ['midbarwedge'	, '⩜'],
+\ ['midbarvee'	, '⩝'],
+\ ['doublebarwedge'	, '⩞'],
+\ ['wedgebar'	, '⩟'],
+\ ['wedgedoublebar'	, '⩠'],
+\ ['varveebar'	, '⩡'],
+\ ['doublebarvee'	, '⩢'],
+\ ['veedoublebar'	, '⩣'],
+\ ['dsub'	, '⩤'],
+\ ['rsub'	, '⩥'],
+\ ['eqqplus'	, '⩱'],
+\ ['pluseqq'	, '⩲'],
+\ ['interleave'	, '⫴'],
+\ ['nhVvert'	, '⫵'],
+\ ['threedotcolon'	, '⫶'],
+\ ['trslash'	, '⫻'],
+\ ['sslash'	, '⫽'],
+\ ['talloblong'	, '⫾'],
+\ ['octothorpe'	, '#'],
+\ ['mathdollar'	, '$'],
+\ ['percent'	, '%'],
+\ ['ampersand'	, '&'],
+\ ['period'	, '.'],
+\ ['mathslash'	, '/'],
+\ ['question'	, '?'],
+\ ['atsign'	, '@'],
+\ ['sterling'	, '£'],
+\ ['yen'	, '¥'],
+\ ['neg'	, '¬'],
+\ ['Zbar'	, 'Ƶ'],
+\ ['upoldKoppa'	, 'Ϙ'],
+\ ['upoldkoppa'	, 'ϙ'],
+\ ['upbackepsilon'	, '϶'],
+\ ['horizbar'	, '―'],
+\ ['twolowline'	, '‗'],
+\ ['enleadertwodots'	, '‥'],
+\ ['unicodeellipsis'	, '…'],
+\ ['prime'	, '′'],
+\ ['dprime'	, '″'],
+\ ['trprime'	, '‴'],
+\ ['backprime'	, '‵'],
+\ ['backdprime'	, '‶'],
+\ ['backtrprime'	, '‷'],
+\ ['caretinsert'	, '‸'],
+\ ['Exclam'	, '‼'],
+\ ['hyphenbullet'	, '⁃'],
+\ ['Question'	, '⁇'],
+\ ['qprime'	, '⁗'],
+\ ['euro'	, '€'],
+\ ['enclosecircle'	, ' ⃝'],
+\ ['enclosesquare'	, ' ⃞'],
+\ ['enclosediamond'	, ' ⃟'],
+\ ['enclosetriangle'	, ' ⃤'],
+\ ['Eulerconst'	, 'ℇ'],
+\ ['Planckconst'	, 'ℎ'],
+\ ['mho'	, '℧'],
+\ ['Finv'	, 'Ⅎ'],
+\ ['Bbbpi'	, 'ℼ'],
+\ ['Game'	, '⅁'],
+\ ['sansLturned'	, '⅂'],
+\ ['sansLmirrored'	, '⅃'],
+\ ['Yup'	, '⅄'],
+\ ['mitBbbD'	, 'ⅅ'],
+\ ['mitBbbd'	, 'ⅆ'],
+\ ['mitBbbe'	, 'ⅇ'],
+\ ['mitBbbi'	, 'ⅈ'],
+\ ['mitBbbj'	, 'ⅉ'],
+\ ['PropertyLine'	, '⅊'],
+\ ['updownarrowbar'	, '↨'],
+\ ['linefeed'	, '↴'],
+\ ['carriagereturn'	, '↵'],
+\ ['barovernorthwestarrow'	, '↸'],
+\ ['barleftarrowrightarrowbar'	, '↹'],
+\ ['acwopencirclearrow'	, '↺'],
+\ ['cwopencirclearrow'	, '↻'],
+\ ['nHuparrow'	, '⇞'],
+\ ['nHdownarrow'	, '⇟'],
+\ ['leftdasharrow'	, '⇠'],
+\ ['updasharrow'	, '⇡'],
+\ ['rightdasharrow'	, '⇢'],
+\ ['downdasharrow'	, '⇣'],
+\ ['leftwhitearrow'	, '⇦'],
+\ ['upwhitearrow'	, '⇧'],
+\ ['rightwhitearrow'	, '⇨'],
+\ ['downwhitearrow'	, '⇩'],
+\ ['whitearrowupfrombar'	, '⇪'],
+\ ['forall'	, '∀'],
+\ ['complement'	, '∁'],
+\ ['exists'	, '∃'],
+\ ['nexists'	, '∄'],
+\ ['varnothing'	, '∅'],
+\ ['increment'	, '∆'],
+\ ['QED'	, '∎'],
+\ ['infty'	, '∞'],
+\ ['rightangle'	, '∟'],
+\ ['angle'	, '∠'],
+\ ['measuredangle'	, '∡'],
+\ ['sphericalangle'	, '∢'],
+\ ['therefore'	, '∴'],
+\ ['because'	, '∵'],
+\ ['sinewave'	, '∿'],
+\ ['top'	, '⊤'],
+\ ['bot'	, '⊥'],
+\ ['hermitmatrix'	, '⊹'],
+\ ['measuredrightangle'	, '⊾'],
+\ ['varlrtriangle'	, '⊿'],
+\ ['unicodecdots'	, '⋯'],
+\ ['diameter'	, '⌀'],
+\ ['house'	, '⌂'],
+\ ['invnot'	, '⌐'],
+\ ['sqlozenge'	, '⌑'],
+\ ['profline'	, '⌒'],
+\ ['profsurf'	, '⌓'],
+\ ['viewdata'	, '⌗'],
+\ ['turnednot'	, '⌙'],
+\ ['inttop'	, '⌠'],
+\ ['intbottom'	, '⌡'],
+\ ['varhexagonlrbonds'	, '⌬'],
+\ ['conictaper'	, '⌲'],
+\ ['topbot'	, '⌶'],
+\ ['APLnotbackslash'	, '⍀'],
+\ ['APLboxupcaret'	, '⍓'],
+\ ['APLboxquestion'	, '⍰'],
+\ ['rangledownzigzagarrow'	, '⍼'],
+\ ['hexagon'	, '⎔'],
+\ ['lparenuend'	, '⎛'],
+\ ['lparenextender'	, '⎜'],
+\ ['lparenlend'	, '⎝'],
+\ ['rparenuend'	, '⎞'],
+\ ['rparenextender'	, '⎟'],
+\ ['rparenlend'	, '⎠'],
+\ ['lbrackuend'	, '⎡'],
+\ ['lbrackextender'	, '⎢'],
+\ ['lbracklend'	, '⎣'],
+\ ['rbrackuend'	, '⎤'],
+\ ['rbrackextender'	, '⎥'],
+\ ['rbracklend'	, '⎦'],
+\ ['lbraceuend'	, '⎧'],
+\ ['lbracemid'	, '⎨'],
+\ ['lbracelend'	, '⎩'],
+\ ['rbraceuend'	, '⎫'],
+\ ['rbracemid'	, '⎬'],
+\ ['rbracelend'	, '⎭'],
+\ ['intextender'	, '⎮'],
+\ ['harrowextender'	, '⎯'],
+\ ['sumtop'	, '⎲'],
+\ ['sumbottom'	, '⎳'],
+\ ['bbrktbrk'	, '⎶'],
+\ ['sqrtbottom'	, '⎷'],
+\ ['lvboxline'	, '⎸'],
+\ ['rvboxline'	, '⎹'],
+\ ['varcarriagereturn'	, '⏎'],
+\ ['obrbrak'	, '⏠'],
+\ ['ubrbrak'	, '⏡'],
+\ ['trapezium'	, '⏢'],
+\ ['benzenr'	, '⏣'],
+\ ['strns'	, '⏤'],
+\ ['fltns'	, '⏥'],
+\ ['accurrent'	, '⏦'],
+\ ['elinters'	, '⏧'],
+\ ['blanksymbol'	, '␢'],
+\ ['mathvisiblespace'	, '␣'],
+\ ['bdtriplevdash'	, '┆'],
+\ ['blockuphalf'	, '▀'],
+\ ['blocklowhalf'	, '▄'],
+\ ['blockfull'	, '█'],
+\ ['blocklefthalf'	, '▌'],
+\ ['blockrighthalf'	, '▐'],
+\ ['blockqtrshaded'	, '░'],
+\ ['blockhalfshaded'	, '▒'],
+\ ['blockthreeqtrshaded'	, '▓'],
+\ ['mdlgblksquare'	, '■'],
+\ ['mdlgwhtsquare'	, '□'],
+\ ['squoval'	, '▢'],
+\ ['blackinwhitesquare'	, '▣'],
+\ ['squarehfill'	, '▤'],
+\ ['squarevfill'	, '▥'],
+\ ['squarehvfill'	, '▦'],
+\ ['squarenwsefill'	, '▧'],
+\ ['squareneswfill'	, '▨'],
+\ ['squarecrossfill'	, '▩'],
+\ ['smblksquare'	, '▪'],
+\ ['smwhtsquare'	, '▫'],
+\ ['hrectangleblack'	, '▬'],
+\ ['hrectangle'	, '▭'],
+\ ['vrectangleblack'	, '▮'],
+\ ['vrectangle'	, '▯'],
+\ ['parallelogramblack'	, '▰'],
+\ ['parallelogram'	, '▱'],
+\ ['bigblacktriangleup'	, '▲'],
+\ ['blacktriangle'	, '▴'],
+\ ['blacktriangleright'	, '▶'],
+\ ['smallblacktriangleright'	, '▸'],
+\ ['smalltriangleright'	, '▹'],
+\ ['blackpointerright'	, '►'],
+\ ['whitepointerright'	, '▻'],
+\ ['bigblacktriangledown'	, '▼'],
+\ ['bigtriangledown'	, '▽'],
+\ ['blacktriangledown'	, '▾'],
+\ ['triangledown'	, '▿'],
+\ ['blacktriangleleft'	, '◀'],
+\ ['smallblacktriangleleft'	, '◂'],
+\ ['smalltriangleleft'	, '◃'],
+\ ['blackpointerleft'	, '◄'],
+\ ['whitepointerleft'	, '◅'],
+\ ['mdlgblkdiamond'	, '◆'],
+\ ['mdlgwhtdiamond'	, '◇'],
+\ ['blackinwhitediamond'	, '◈'],
+\ ['fisheye'	, '◉'],
+\ ['mdlgwhtlozenge'	, '◊'],
+\ ['dottedcircle'	, '◌'],
+\ ['circlevertfill'	, '◍'],
+\ ['bullseye'	, '◎'],
+\ ['mdlgblkcircle'	, '●'],
+\ ['circlelefthalfblack'	, '◐'],
+\ ['circlerighthalfblack'	, '◑'],
+\ ['circlebottomhalfblack'	, '◒'],
+\ ['circletophalfblack'	, '◓'],
+\ ['circleurquadblack'	, '◔'],
+\ ['blackcircleulquadwhite'	, '◕'],
+\ ['blacklefthalfcircle'	, '◖'],
+\ ['blackrighthalfcircle'	, '◗'],
+\ ['inversebullet'	, '◘'],
+\ ['inversewhitecircle'	, '◙'],
+\ ['invwhiteupperhalfcircle'	, '◚'],
+\ ['invwhitelowerhalfcircle'	, '◛'],
+\ ['ularc'	, '◜'],
+\ ['urarc'	, '◝'],
+\ ['lrarc'	, '◞'],
+\ ['llarc'	, '◟'],
+\ ['topsemicircle'	, '◠'],
+\ ['botsemicircle'	, '◡'],
+\ ['lrblacktriangle'	, '◢'],
+\ ['llblacktriangle'	, '◣'],
+\ ['ulblacktriangle'	, '◤'],
+\ ['urblacktriangle'	, '◥'],
+\ ['smwhtcircle'	, '◦'],
+\ ['squareleftblack'	, '◧'],
+\ ['squarerightblack'	, '◨'],
+\ ['squareulblack'	, '◩'],
+\ ['squarelrblack'	, '◪'],
+\ ['trianglecdot'	, '◬'],
+\ ['triangleleftblack'	, '◭'],
+\ ['trianglerightblack'	, '◮'],
+\ ['lgwhtcircle'	, '◯'],
+\ ['squareulquad'	, '◰'],
+\ ['squarellquad'	, '◱'],
+\ ['squarelrquad'	, '◲'],
+\ ['squareurquad'	, '◳'],
+\ ['circleulquad'	, '◴'],
+\ ['circlellquad'	, '◵'],
+\ ['circlelrquad'	, '◶'],
+\ ['circleurquad'	, '◷'],
+\ ['ultriangle'	, '◸'],
+\ ['urtriangle'	, '◹'],
+\ ['lltriangle'	, '◺'],
+\ ['mdwhtsquare'	, '◻'],
+\ ['mdblksquare'	, '◼'],
+\ ['mdsmwhtsquare'	, '◽'],
+\ ['mdsmblksquare'	, '◾'],
+\ ['lrtriangle'	, '◿'],
+\ ['bigstar'	, '★'],
+\ ['bigwhitestar'	, '☆'],
+\ ['astrosun'	, '☉'],
+\ ['danger'	, '☡'],
+\ ['blacksmiley'	, '☻'],
+\ ['sun'	, '☼'],
+\ ['rightmoon'	, '☽'],
+\ ['leftmoon'	, '☾'],
+\ ['female'	, '♀'],
+\ ['male'	, '♂'],
+\ ['spadesuit'	, '♠'],
+\ ['heartsuit'	, '♡'],
+\ ['diamondsuit'	, '♢'],
+\ ['clubsuit'	, '♣'],
+\ ['varspadesuit'	, '♤'],
+\ ['varheartsuit'	, '♥'],
+\ ['vardiamondsuit'	, '♦'],
+\ ['varclubsuit'	, '♧'],
+\ ['quarternote'	, '♩'],
+\ ['eighthnote'	, '♪'],
+\ ['twonotes'	, '♫'],
+\ ['flat'	, '♭'],
+\ ['natural'	, '♮'],
+\ ['sharp'	, '♯'],
+\ ['acidfree'	, '♾'],
+\ ['dicei'	, '⚀'],
+\ ['diceii'	, '⚁'],
+\ ['diceiii'	, '⚂'],
+\ ['diceiv'	, '⚃'],
+\ ['dicev'	, '⚄'],
+\ ['dicevi'	, '⚅'],
+\ ['circledrightdot'	, '⚆'],
+\ ['circledtwodots'	, '⚇'],
+\ ['blackcircledrightdot'	, '⚈'],
+\ ['blackcircledtwodots'	, '⚉'],
+\ ['Hermaphrodite'	, '⚥ '],
+\ ['mdwhtcircle'	, '⚪'],
+\ ['mdblkcircle'	, '⚫'],
+\ ['mdsmwhtcircle'	, '⚬'],
+\ ['neuter'	, '⚲'],
+\ ['checkmark'	, '✓'],
+\ ['maltese'	, '✠'],
+\ ['circledstar'	, '✪'],
+\ ['varstar'	, '✶'],
+\ ['dingasterisk'	, '✽'],
+\ ['draftingarrow'	, '➛'],
+\ ['threedangle'	, '⟀'],
+\ ['whiteinwhitetriangle'	, '⟁'],
+\ ['subsetcirc'	, '⟃'],
+\ ['supsetcirc'	, '⟄'],
+\ ['diamondcdot'	, '⟐'],
+\ ['rdiagovfdiag'	, '⤫'],
+\ ['fdiagovrdiag'	, '⤬'],
+\ ['seovnearrow'	, '⤭'],
+\ ['neovsearrow'	, '⤮'],
+\ ['fdiagovnearrow'	, '⤯'],
+\ ['rdiagovsearrow'	, '⤰'],
+\ ['neovnwarrow'	, '⤱'],
+\ ['nwovnearrow'	, '⤲'],
+\ ['uprightcurvearrow'	, '⤴'],
+\ ['downrightcurvedarrow'	, '⤵'],
+\ ['mdsmblkcircle'	, '⦁'],
+\ ['fourvdots'	, '⦙'],
+\ ['vzigzag'	, '⦚'],
+\ ['measuredangleleft'	, '⦛'],
+\ ['rightanglesqr'	, '⦜'],
+\ ['rightanglemdot'	, '⦝'],
+\ ['angles'	, '⦞'],
+\ ['angdnr'	, '⦟'],
+\ ['gtlpar'	, '⦠'],
+\ ['sphericalangleup'	, '⦡'],
+\ ['turnangle'	, '⦢'],
+\ ['revangle'	, '⦣'],
+\ ['angleubar'	, '⦤'],
+\ ['revangleubar'	, '⦥'],
+\ ['wideangledown'	, '⦦'],
+\ ['wideangleup'	, '⦧'],
+\ ['measanglerutone'	, '⦨'],
+\ ['measanglelutonw'	, '⦩'],
+\ ['measanglerdtose'	, '⦪'],
+\ ['measangleldtosw'	, '⦫'],
+\ ['measangleurtone'	, '⦬'],
+\ ['measangleultonw'	, '⦭'],
+\ ['measangledrtose'	, '⦮'],
+\ ['measangledltosw'	, '⦯'],
+\ ['revemptyset'	, '⦰'],
+\ ['emptysetobar'	, '⦱'],
+\ ['emptysetocirc'	, '⦲'],
+\ ['emptysetoarr'	, '⦳'],
+\ ['emptysetoarrl'	, '⦴'],
+\ ['obot'	, '⦺'],
+\ ['olcross'	, '⦻'],
+\ ['odotslashdot'	, '⦼'],
+\ ['uparrowoncircle'	, '⦽'],
+\ ['circledwhitebullet'	, '⦾'],
+\ ['circledbullet'	, '⦿'],
+\ ['cirscir'	, '⧂'],
+\ ['cirE'	, '⧃'],
+\ ['boxonbox'	, '⧉'],
+\ ['triangleodot'	, '⧊'],
+\ ['triangleubar'	, '⧋'],
+\ ['triangles'	, '⧌'],
+\ ['iinfin'	, '⧜'],
+\ ['tieinfty'	, '⧝'],
+\ ['nvinfty'	, '⧞'],
+\ ['laplac'	, '⧠'],
+\ ['thermod'	, '⧧'],
+\ ['downtriangleleftblack'	, '⧨'],
+\ ['downtrianglerightblack'	, '⧩'],
+\ ['blackdiamonddownarrow'	, '⧪'],
+\ ['circledownarrow'	, '⧬'],
+\ ['blackcircledownarrow'	, '⧭'],
+\ ['errbarsquare'	, '⧮'],
+\ ['errbarblacksquare'	, '⧯'],
+\ ['errbardiamond'	, '⧰'],
+\ ['errbarblackdiamond'	, '⧱'],
+\ ['errbarcircle'	, '⧲'],
+\ ['errbarblackcircle'	, '⧳'],
+\ ['perps'	, '⫡'],
+\ ['topcir'	, '⫱'],
+\ ['squaretopblack'	, '⬒'],
+\ ['squarebotblack'	, '⬓'],
+\ ['squareurblack'	, '⬔'],
+\ ['squarellblack'	, '⬕'],
+\ ['diamondleftblack'	, '⬖'],
+\ ['diamondrightblack'	, '⬗'],
+\ ['diamondtopblack'	, '⬘'],
+\ ['diamondbotblack'	, '⬙'],
+\ ['dottedsquare'	, '⬚'],
+\ ['lgblksquare'	, '⬛'],
+\ ['lgwhtsquare'	, '⬜'],
+\ ['vysmblksquare'	, '⬝'],
+\ ['vysmwhtsquare'	, '⬞'],
+\ ['pentagonblack'	, '⬟'],
+\ ['pentagon'	, '⬠'],
+\ ['varhexagon'	, '⬡'],
+\ ['varhexagonblack'	, '⬢'],
+\ ['hexagonblack'	, '⬣'],
+\ ['lgblkcircle'	, '⬤'],
+\ ['mdblkdiamond'	, '⬥'],
+\ ['mdwhtdiamond'	, '⬦'],
+\ ['mdblklozenge'	, '⬧'],
+\ ['mdwhtlozenge'	, '⬨'],
+\ ['smblkdiamond'	, '⬩'],
+\ ['smblklozenge'	, '⬪'],
+\ ['smwhtlozenge'	, '⬫'],
+\ ['blkhorzoval'	, '⬬'],
+\ ['whthorzoval'	, '⬭'],
+\ ['blkvertoval'	, '⬮'],
+\ ['whtvertoval'	, '⬯'],
+\ ['medwhitestar'	, '⭐'],
+\ ['medblackstar'	, '⭑'],
+\ ['smwhitestar'	, '⭒'],
+\ ['rightpentagonblack'	, '⭓'],
+\ ['rightpentagon'	, '⭔'],
+\ ['postalmark'	, '〒'],
+\ ['hzigzag'	, '〰'],
+\ ['mbfzero'	, '𝟎'],
+\ ['mbfone'	, '𝟏'],
+\ ['mbftwo'	, '𝟐'],
+\ ['mbfthree'	, '𝟑'],
+\ ['mbffour'	, '𝟒'],
+\ ['mbffive'	, '𝟓'],
+\ ['mbfsix'	, '𝟔'],
+\ ['mbfseven'	, '𝟕'],
+\ ['mbfeight'	, '𝟖'],
+\ ['mbfnine'	, '𝟗'],
+\ ['Bbbzero'	, '𝟘'],
+\ ['Bbbone'	, '𝟙'],
+\ ['Bbbtwo'	, '𝟚'],
+\ ['Bbbthree'	, '𝟛'],
+\ ['Bbbfour'	, '𝟜'],
+\ ['Bbbfive'	, '𝟝'],
+\ ['Bbbsix'	, '𝟞'],
+\ ['Bbbseven'	, '𝟟'],
+\ ['Bbbeight'	, '𝟠'],
+\ ['Bbbnine'	, '𝟡'],
+\ ['msanszero'	, '𝟢'],
+\ ['msansone'	, '𝟣'],
+\ ['msanstwo'	, '𝟤'],
+\ ['msansthree'	, '𝟥'],
+\ ['msansfour'	, '𝟦'],
+\ ['msansfive'	, '𝟧'],
+\ ['msanssix'	, '𝟨'],
+\ ['msansseven'	, '𝟩'],
+\ ['msanseight'	, '𝟪'],
+\ ['msansnine'	, '𝟫'],
+\ ['mbfsanszero'	, '𝟬'],
+\ ['mbfsansone'	, '𝟭'],
+\ ['mbfsanstwo'	, '𝟮'],
+\ ['mbfsansthree'	, '𝟯'],
+\ ['mbfsansfour'	, '𝟰'],
+\ ['mbfsansfive'	, '𝟱'],
+\ ['mbfsanssix'	, '𝟲'],
+\ ['mbfsansseven'	, '𝟳'],
+\ ['mbfsanseight'	, '𝟴'],
+\ ['mbfsansnine'	, '𝟵'],
+\ ['mttzero'	, '𝟶'],
+\ ['mttone'	, '𝟷'],
+\ ['mtttwo'	, '𝟸'],
+\ ['mttthree'	, '𝟹'],
+\ ['mttfour'	, '𝟺'],
+\ ['mttfive'	, '𝟻'],
+\ ['mttsix'	, '𝟼'],
+\ ['mttseven'	, '𝟽'],
+\ ['mtteight'	, '𝟾'],
+\ ['mttnine'	, '𝟿'],
+\ ['less'	, '<'],
+\ ['equal'	, '='],
+\ ['greater'	, '>'],
+\ ['closure'	, '⁐'],
+\ ['leftarrow'	, '←'],
+\ ['uparrow'	, '↑'],
+\ ['rightarrow'	, '→'],
+\ ['downarrow'	, '↓'],
+\ ['leftrightarrow'	, '↔'],
+\ ['updownarrow'	, '↕'],
+\ ['nwarrow'	, '↖'],
+\ ['nearrow'	, '↗'],
+\ ['searrow'	, '↘'],
+\ ['swarrow'	, '↙'],
+\ ['nleftarrow'	, '↚'],
+\ ['nrightarrow'	, '↛'],
+\ ['leftwavearrow'	, '↜'],
+\ ['rightwavearrow'	, '↝'],
+\ ['twoheadleftarrow'	, '↞'],
+\ ['twoheaduparrow'	, '↟'],
+\ ['twoheadrightarrow'	, '↠'],
+\ ['twoheaddownarrow'	, '↡'],
+\ ['leftarrowtail'	, '↢'],
+\ ['rightarrowtail'	, '↣'],
+\ ['mapsfrom'	, '↤'],
+\ ['mapsup'	, '↥'],
+\ ['mapsto'	, '↦'],
+\ ['mapsdown'	, '↧'],
+\ ['hookleftarrow'	, '↩'],
+\ ['hookrightarrow'	, '↪'],
+\ ['looparrowleft'	, '↫'],
+\ ['looparrowright'	, '↬'],
+\ ['leftrightsquigarrow'	, '↭'],
+\ ['nleftrightarrow'	, '↮'],
+\ ['downzigzagarrow'	, '↯'],
+\ ['Lsh'	, '↰'],
+\ ['Rsh'	, '↱'],
+\ ['Ldsh'	, '↲'],
+\ ['Rdsh'	, '↳'],
+\ ['curvearrowleft'	, '↶'],
+\ ['curvearrowright'	, '↷'],
+\ ['leftharpoonup'	, '↼'],
+\ ['leftharpoondown'	, '↽'],
+\ ['upharpoonright'	, '↾'],
+\ ['upharpoonleft'	, '↿'],
+\ ['rightharpoonup'	, '⇀'],
+\ ['rightharpoondown'	, '⇁'],
+\ ['downharpoonright'	, '⇂'],
+\ ['downharpoonleft'	, '⇃'],
+\ ['rightleftarrows'	, '⇄'],
+\ ['updownarrows'	, '⇅'],
+\ ['leftrightarrows'	, '⇆'],
+\ ['leftleftarrows'	, '⇇'],
+\ ['upuparrows'	, '⇈'],
+\ ['rightrightarrows'	, '⇉'],
+\ ['downdownarrows'	, '⇊'],
+\ ['leftrightharpoons'	, '⇋'],
+\ ['rightleftharpoons'	, '⇌'],
+\ ['nLeftarrow'	, '⇍'],
+\ ['nLeftrightarrow'	, '⇎'],
+\ ['nRightarrow'	, '⇏'],
+\ ['Leftarrow'	, '⇐'],
+\ ['Uparrow'	, '⇑'],
+\ ['Rightarrow'	, '⇒'],
+\ ['Downarrow'	, '⇓'],
+\ ['Leftrightarrow'	, '⇔'],
+\ ['Updownarrow'	, '⇕'],
+\ ['Nwarrow'	, '⇖'],
+\ ['Nearrow'	, '⇗'],
+\ ['Searrow'	, '⇘'],
+\ ['Swarrow'	, '⇙'],
+\ ['Lleftarrow'	, '⇚'],
+\ ['Rrightarrow'	, '⇛'],
+\ ['leftsquigarrow'	, '⇜'],
+\ ['rightsquigarrow'	, '⇝'],
+\ ['barleftarrow'	, '⇤'],
+\ ['rightarrowbar'	, '⇥'],
+\ ['circleonrightarrow'	, '⇴'],
+\ ['downuparrows'	, '⇵'],
+\ ['rightthreearrows'	, '⇶'],
+\ ['nvleftarrow'	, '⇷'],
+\ ['nvrightarrow'	, '⇸'],
+\ ['nvleftrightarrow'	, '⇹'],
+\ ['nVleftarrow'	, '⇺'],
+\ ['nVrightarrow'	, '⇻'],
+\ ['nVleftrightarrow'	, '⇼'],
+\ ['leftarrowtriangle'	, '⇽'],
+\ ['rightarrowtriangle'	, '⇾'],
+\ ['leftrightarrowtriangle'	, '⇿'],
+\ ['in'	, '∈'],
+\ ['notin'	, '∉'],
+\ ['smallin'	, '∊'],
+\ ['ni'	, '∋'],
+\ ['nni'	, '∌'],
+\ ['smallni'	, '∍'],
+\ ['propto'	, '∝'],
+\ ['mid'	, '∣'],
+\ ['nmid'	, '∤'],
+\ ['parallel'	, '∥'],
+\ ['nparallel'	, '∦'],
+\ ['mathratio'	, '∶'],
+\ ['Colon'	, '∷'],
+\ ['dashcolon'	, '∹'],
+\ ['dotsminusdots'	, '∺'],
+\ ['kernelcontraction'	, '∻'],
+\ ['sim'	, '∼'],
+\ ['backsim'	, '∽'],
+\ ['nsim'	, '≁'],
+\ ['eqsim'	, '≂'],
+\ ['simeq'	, '≃'],
+\ ['nsime'	, '≄'],
+\ ['cong'	, '≅'],
+\ ['simneqq'	, '≆'],
+\ ['ncong'	, '≇'],
+\ ['approx'	, '≈'],
+\ ['napprox'	, '≉'],
+\ ['approxeq'	, '≊'],
+\ ['approxident'	, '≋'],
+\ ['backcong'	, '≌'],
+\ ['asymp'	, '≍'],
+\ ['Bumpeq'	, '≎'],
+\ ['bumpeq'	, '≏'],
+\ ['doteq'	, '≐'],
+\ ['Doteq'	, '≑'],
+\ ['fallingdotseq'	, '≒'],
+\ ['risingdotseq'	, '≓'],
+\ ['coloneq'	, '≔'],
+\ ['eqcolon'	, '≕'],
+\ ['eqcirc'	, '≖'],
+\ ['circeq'	, '≗'],
+\ ['arceq'	, '≘'],
+\ ['wedgeq'	, '≙'],
+\ ['veeeq'	, '≚'],
+\ ['stareq'	, '≛'],
+\ ['triangleq'	, '≜'],
+\ ['eqdef'	, '≝'],
+\ ['measeq'	, '≞'],
+\ ['questeq'	, '≟'],
+\ ['ne'	, '≠'],
+\ ['equiv'	, '≡'],
+\ ['nequiv'	, '≢'],
+\ ['Equiv'	, '≣'],
+\ ['leq'	, '≤'],
+\ ['geq'	, '≥'],
+\ ['leqq'	, '≦'],
+\ ['geqq'	, '≧'],
+\ ['lneqq'	, '≨'],
+\ ['gneqq'	, '≩'],
+\ ['ll'	, '≪'],
+\ ['gg'	, '≫'],
+\ ['between'	, '≬'],
+\ ['nasymp'	, '≭'],
+\ ['nless'	, '≮'],
+\ ['ngtr'	, '≯'],
+\ ['nleq'	, '≰'],
+\ ['ngeq'	, '≱'],
+\ ['lesssim'	, '≲'],
+\ ['gtrsim'	, '≳'],
+\ ['nlesssim'	, '≴'],
+\ ['ngtrsim'	, '≵'],
+\ ['lessgtr'	, '≶'],
+\ ['gtrless'	, '≷'],
+\ ['nlessgtr'	, '≸'],
+\ ['ngtrless'	, '≹'],
+\ ['prec'	, '≺'],
+\ ['succ'	, '≻'],
+\ ['preccurlyeq'	, '≼'],
+\ ['succcurlyeq'	, '≽'],
+\ ['precsim'	, '≾'],
+\ ['succsim'	, '≿'],
+\ ['nprec'	, '⊀'],
+\ ['nsucc'	, '⊁'],
+\ ['subset'	, '⊂'],
+\ ['supset'	, '⊃'],
+\ ['nsubset'	, '⊄'],
+\ ['nsupset'	, '⊅'],
+\ ['subseteq'	, '⊆'],
+\ ['supseteq'	, '⊇'],
+\ ['nsubseteq'	, '⊈'],
+\ ['nsupseteq'	, '⊉'],
+\ ['subsetneq'	, '⊊'],
+\ ['supsetneq'	, '⊋'],
+\ ['sqsubset'	, '⊏'],
+\ ['sqsupset'	, '⊐'],
+\ ['sqsubseteq'	, '⊑'],
+\ ['sqsupseteq'	, '⊒'],
+\ ['vdash'	, '⊢'],
+\ ['dashv'	, '⊣'],
+\ ['assert'	, '⊦'],
+\ ['models'	, '⊧'],
+\ ['vDash'	, '⊨'],
+\ ['Vdash'	, '⊩'],
+\ ['Vvdash'	, '⊪'],
+\ ['VDash'	, '⊫'],
+\ ['nvdash'	, '⊬'],
+\ ['nvDash'	, '⊭'],
+\ ['nVdash'	, '⊮'],
+\ ['nVDash'	, '⊯'],
+\ ['prurel'	, '⊰'],
+\ ['scurel'	, '⊱'],
+\ ['vartriangleleft'	, '⊲'],
+\ ['vartriangleright'	, '⊳'],
+\ ['trianglelefteq'	, '⊴'],
+\ ['trianglerighteq'	, '⊵'],
+\ ['origof'	, '⊶'],
+\ ['imageof'	, '⊷'],
+\ ['multimap'	, '⊸'],
+\ ['bowtie'	, '⋈'],
+\ ['backsimeq'	, '⋍'],
+\ ['Subset'	, '⋐'],
+\ ['Supset'	, '⋑'],
+\ ['pitchfork'	, '⋔'],
+\ ['equalparallel'	, '⋕'],
+\ ['lessdot'	, '⋖'],
+\ ['gtrdot'	, '⋗'],
+\ ['lll'	, '⋘'],
+\ ['ggg'	, '⋙'],
+\ ['lesseqgtr'	, '⋚'],
+\ ['gtreqless'	, '⋛'],
+\ ['eqless'	, '⋜'],
+\ ['eqgtr'	, '⋝'],
+\ ['curlyeqprec'	, '⋞'],
+\ ['curlyeqsucc'	, '⋟'],
+\ ['npreccurlyeq'	, '⋠'],
+\ ['nsucccurlyeq'	, '⋡'],
+\ ['nsqsubseteq'	, '⋢'],
+\ ['nsqsupseteq'	, '⋣'],
+\ ['sqsubsetneq'	, '⋤'],
+\ ['sqsupsetneq'	, '⋥'],
+\ ['lnsim'	, '⋦'],
+\ ['gnsim'	, '⋧'],
+\ ['precnsim'	, '⋨'],
+\ ['succnsim'	, '⋩'],
+\ ['nvartriangleleft'	, '⋪'],
+\ ['nvartriangleright'	, '⋫'],
+\ ['ntrianglelefteq'	, '⋬'],
+\ ['ntrianglerighteq'	, '⋭'],
+\ ['vdots'	, '⋮'],
+\ ['adots'	, '⋰'],
+\ ['ddots'	, '⋱'],
+\ ['disin'	, '⋲'],
+\ ['varisins'	, '⋳'],
+\ ['isins'	, '⋴'],
+\ ['isindot'	, '⋵'],
+\ ['varisinobar'	, '⋶'],
+\ ['isinobar'	, '⋷'],
+\ ['isinvb'	, '⋸'],
+\ ['isinE'	, '⋹'],
+\ ['nisd'	, '⋺'],
+\ ['varnis'	, '⋻'],
+\ ['nis'	, '⋼'],
+\ ['varniobar'	, '⋽'],
+\ ['niobar'	, '⋾'],
+\ ['bagmember'	, '⋿'],
+\ ['frown'	, '⌢'],
+\ ['smile'	, '⌣'],
+\ ['APLnotslash'	, '⌿'],
+\ ['vartriangle'	, '▵'],
+\ ['perp'	, '⟂'],
+\ ['bsolhsub'	, '⟈'],
+\ ['suphsol'	, '⟉'],
+\ ['upin'	, '⟒'],
+\ ['pullback'	, '⟓'],
+\ ['pushout'	, '⟔'],
+\ ['DashVDash'	, '⟚'],
+\ ['dashVdash'	, '⟛'],
+\ ['multimapinv'	, '⟜'],
+\ ['vlongdash'	, '⟝'],
+\ ['longdashv'	, '⟞'],
+\ ['cirbot'	, '⟟'],
+\ ['UUparrow'	, '⟰'],
+\ ['DDownarrow'	, '⟱'],
+\ ['acwgapcirclearrow'	, '⟲'],
+\ ['cwgapcirclearrow'	, '⟳'],
+\ ['rightarrowonoplus'	, '⟴'],
+\ ['longleftarrow'	, '⟵'],
+\ ['longrightarrow'	, '⟶'],
+\ ['longleftrightarrow'	, '⟷'],
+\ ['Longleftarrow'	, '⟸'],
+\ ['Longrightarrow'	, '⟹'],
+\ ['Longleftrightarrow'	, '⟺'],
+\ ['longmapsfrom'	, '⟻'],
+\ ['longmapsto'	, '⟼'],
+\ ['Longmapsfrom'	, '⟽'],
+\ ['Longmapsto'	, '⟾'],
+\ ['longrightsquigarrow'	, '⟿'],
+\ ['nvtwoheadrightarrow'	, '⤀'],
+\ ['nVtwoheadrightarrow'	, '⤁'],
+\ ['nvLeftarrow'	, '⤂'],
+\ ['nvRightarrow'	, '⤃'],
+\ ['nvLeftrightarrow'	, '⤄'],
+\ ['twoheadmapsto'	, '⤅'],
+\ ['Mapsfrom'	, '⤆'],
+\ ['Mapsto'	, '⤇'],
+\ ['downarrowbarred'	, '⤈'],
+\ ['uparrowbarred'	, '⤉'],
+\ ['Uuparrow'	, '⤊'],
+\ ['Ddownarrow'	, '⤋'],
+\ ['leftbkarrow'	, '⤌'],
+\ ['rightbkarrow'	, '⤍'],
+\ ['leftdbkarrow'	, '⤎'],
+\ ['dbkarow'	, '⤏'],
+\ ['drbkarow'	, '⤐'],
+\ ['rightdotarrow'	, '⤑'],
+\ ['baruparrow'	, '⤒'],
+\ ['downarrowbar'	, '⤓'],
+\ ['nvrightarrowtail'	, '⤔'],
+\ ['nVrightarrowtail'	, '⤕'],
+\ ['twoheadrightarrowtail'	, '⤖'],
+\ ['nvtwoheadrightarrowtail'	, '⤗'],
+\ ['nVtwoheadrightarrowtail'	, '⤘'],
+\ ['lefttail'	, '⤙'],
+\ ['righttail'	, '⤚'],
+\ ['leftdbltail'	, '⤛'],
+\ ['rightdbltail'	, '⤜'],
+\ ['diamondleftarrow'	, '⤝'],
+\ ['rightarrowdiamond'	, '⤞'],
+\ ['diamondleftarrowbar'	, '⤟'],
+\ ['barrightarrowdiamond'	, '⤠'],
+\ ['nwsearrow'	, '⤡'],
+\ ['neswarrow'	, '⤢'],
+\ ['hknwarrow'	, '⤣'],
+\ ['hknearrow'	, '⤤'],
+\ ['hksearow'	, '⤥'],
+\ ['hkswarow'	, '⤦'],
+\ ['tona'	, '⤧'],
+\ ['toea'	, '⤨'],
+\ ['tosa'	, '⤩'],
+\ ['towa'	, '⤪'],
+\ ['rightcurvedarrow'	, '⤳'],
+\ ['leftdowncurvedarrow'	, '⤶'],
+\ ['rightdowncurvedarrow'	, '⤷'],
+\ ['cwrightarcarrow'	, '⤸'],
+\ ['acwleftarcarrow'	, '⤹'],
+\ ['acwoverarcarrow'	, '⤺'],
+\ ['acwunderarcarrow'	, '⤻'],
+\ ['curvearrowrightminus'	, '⤼'],
+\ ['curvearrowleftplus'	, '⤽'],
+\ ['cwundercurvearrow'	, '⤾'],
+\ ['ccwundercurvearrow'	, '⤿'],
+\ ['acwcirclearrow'	, '⥀'],
+\ ['cwcirclearrow'	, '⥁'],
+\ ['rightarrowshortleftarrow'	, '⥂'],
+\ ['leftarrowshortrightarrow'	, '⥃'],
+\ ['shortrightarrowleftarrow'	, '⥄'],
+\ ['rightarrowplus'	, '⥅'],
+\ ['leftarrowplus'	, '⥆'],
+\ ['rightarrowx'	, '⥇'],
+\ ['leftrightarrowcircle'	, '⥈'],
+\ ['twoheaduparrowcircle'	, '⥉'],
+\ ['leftrightharpoonupdown'	, '⥊'],
+\ ['leftrightharpoondownup'	, '⥋'],
+\ ['updownharpoonrightleft'	, '⥌'],
+\ ['updownharpoonleftright'	, '⥍'],
+\ ['leftrightharpoonupup'	, '⥎'],
+\ ['updownharpoonrightright'	, '⥏'],
+\ ['leftrightharpoondowndown'	, '⥐'],
+\ ['updownharpoonleftleft'	, '⥑'],
+\ ['barleftharpoonup'	, '⥒'],
+\ ['rightharpoonupbar'	, '⥓'],
+\ ['barupharpoonright'	, '⥔'],
+\ ['downharpoonrightbar'	, '⥕'],
+\ ['barleftharpoondown'	, '⥖'],
+\ ['rightharpoondownbar'	, '⥗'],
+\ ['barupharpoonleft'	, '⥘'],
+\ ['downharpoonleftbar'	, '⥙'],
+\ ['leftharpoonupbar'	, '⥚'],
+\ ['barrightharpoonup'	, '⥛'],
+\ ['upharpoonrightbar'	, '⥜'],
+\ ['bardownharpoonright'	, '⥝'],
+\ ['leftharpoondownbar'	, '⥞'],
+\ ['barrightharpoondown'	, '⥟'],
+\ ['upharpoonleftbar'	, '⥠'],
+\ ['bardownharpoonleft'	, '⥡'],
+\ ['leftharpoonsupdown'	, '⥢'],
+\ ['upharpoonsleftright'	, '⥣'],
+\ ['rightharpoonsupdown'	, '⥤'],
+\ ['downharpoonsleftright'	, '⥥'],
+\ ['leftrightharpoonsup'	, '⥦'],
+\ ['leftrightharpoonsdown'	, '⥧'],
+\ ['rightleftharpoonsup'	, '⥨'],
+\ ['rightleftharpoonsdown'	, '⥩'],
+\ ['leftharpoonupdash'	, '⥪'],
+\ ['dashleftharpoondown'	, '⥫'],
+\ ['rightharpoonupdash'	, '⥬'],
+\ ['dashrightharpoondown'	, '⥭'],
+\ ['updownharpoonsleftright'	, '⥮'],
+\ ['downupharpoonsleftright'	, '⥯'],
+\ ['rightimply'	, '⥰'],
+\ ['equalrightarrow'	, '⥱'],
+\ ['similarrightarrow'	, '⥲'],
+\ ['leftarrowsimilar'	, '⥳'],
+\ ['rightarrowsimilar'	, '⥴'],
+\ ['rightarrowapprox'	, '⥵'],
+\ ['ltlarr'	, '⥶'],
+\ ['leftarrowless'	, '⥷'],
+\ ['gtrarr'	, '⥸'],
+\ ['subrarr'	, '⥹'],
+\ ['leftarrowsubset'	, '⥺'],
+\ ['suplarr'	, '⥻'],
+\ ['leftfishtail'	, '⥼'],
+\ ['rightfishtail'	, '⥽'],
+\ ['upfishtail'	, '⥾'],
+\ ['downfishtail'	, '⥿'],
+\ ['rtriltri'	, '⧎'],
+\ ['ltrivb'	, '⧏'],
+\ ['vbrtri'	, '⧐'],
+\ ['lfbowtie'	, '⧑'],
+\ ['rfbowtie'	, '⧒'],
+\ ['fbowtie'	, '⧓'],
+\ ['lftimes'	, '⧔'],
+\ ['rftimes'	, '⧕'],
+\ ['dualmap'	, '⧟'],
+\ ['lrtriangleeq'	, '⧡'],
+\ ['eparsl'	, '⧣'],
+\ ['smeparsl'	, '⧤'],
+\ ['eqvparsl'	, '⧥'],
+\ ['gleichstark'	, '⧦'],
+\ ['ruledelayed'	, '⧴'],
+\ ['veeonwedge'	, '⩙'],
+\ ['eqdot'	, '⩦'],
+\ ['dotequiv'	, '⩧'],
+\ ['equivVert'	, '⩨'],
+\ ['equivVvert'	, '⩩'],
+\ ['dotsim'	, '⩪'],
+\ ['simrdots'	, '⩫'],
+\ ['simminussim'	, '⩬'],
+\ ['congdot'	, '⩭'],
+\ ['asteq'	, '⩮'],
+\ ['hatapprox'	, '⩯'],
+\ ['approxeqq'	, '⩰'],
+\ ['eqqsim'	, '⩳'],
+\ ['Coloneq'	, '⩴'],
+\ ['eqeq'	, '⩵'],
+\ ['eqeqeq'	, '⩶'],
+\ ['ddotseq'	, '⩷'],
+\ ['equivDD'	, '⩸'],
+\ ['ltcir'	, '⩹'],
+\ ['gtcir'	, '⩺'],
+\ ['ltquest'	, '⩻'],
+\ ['gtquest'	, '⩼'],
+\ ['leqslant'	, '⩽'],
+\ ['geqslant'	, '⩾'],
+\ ['lesdot'	, '⩿'],
+\ ['gesdot'	, '⪀'],
+\ ['lesdoto'	, '⪁'],
+\ ['gesdoto'	, '⪂'],
+\ ['lesdotor'	, '⪃'],
+\ ['gesdotol'	, '⪄'],
+\ ['lessapprox'	, '⪅'],
+\ ['gtrapprox'	, '⪆'],
+\ ['lneq'	, '⪇'],
+\ ['gneq'	, '⪈'],
+\ ['lnapprox'	, '⪉'],
+\ ['gnapprox'	, '⪊'],
+\ ['lesseqqgtr'	, '⪋'],
+\ ['gtreqqless'	, '⪌'],
+\ ['lsime'	, '⪍'],
+\ ['gsime'	, '⪎'],
+\ ['lsimg'	, '⪏'],
+\ ['gsiml'	, '⪐'],
+\ ['lgE'	, '⪑'],
+\ ['glE'	, '⪒'],
+\ ['lesges'	, '⪓'],
+\ ['gesles'	, '⪔'],
+\ ['eqslantless'	, '⪕'],
+\ ['eqslantgtr'	, '⪖'],
+\ ['elsdot'	, '⪗'],
+\ ['egsdot'	, '⪘'],
+\ ['eqqless'	, '⪙'],
+\ ['eqqgtr'	, '⪚'],
+\ ['eqqslantless'	, '⪛'],
+\ ['eqqslantgtr'	, '⪜'],
+\ ['simless'	, '⪝'],
+\ ['simgtr'	, '⪞'],
+\ ['simlE'	, '⪟'],
+\ ['simgE'	, '⪠'],
+\ ['Lt'	, '⪡'],
+\ ['Gt'	, '⪢'],
+\ ['partialmeetcontraction'	, '⪣'],
+\ ['glj'	, '⪤'],
+\ ['gla'	, '⪥'],
+\ ['ltcc'	, '⪦'],
+\ ['gtcc'	, '⪧'],
+\ ['lescc'	, '⪨'],
+\ ['gescc'	, '⪩'],
+\ ['smt'	, '⪪'],
+\ ['lat'	, '⪫'],
+\ ['smte'	, '⪬'],
+\ ['late'	, '⪭'],
+\ ['bumpeqq'	, '⪮'],
+\ ['preceq'	, '⪯'],
+\ ['succeq'	, '⪰'],
+\ ['precneq'	, '⪱'],
+\ ['succneq'	, '⪲'],
+\ ['preceqq'	, '⪳'],
+\ ['succeqq'	, '⪴'],
+\ ['precneqq'	, '⪵'],
+\ ['succneqq'	, '⪶'],
+\ ['precapprox'	, '⪷'],
+\ ['succapprox'	, '⪸'],
+\ ['precnapprox'	, '⪹'],
+\ ['succnapprox'	, '⪺'],
+\ ['Prec'	, '⪻'],
+\ ['Succ'	, '⪼'],
+\ ['subsetdot'	, '⪽'],
+\ ['supsetdot'	, '⪾'],
+\ ['subsetplus'	, '⪿'],
+\ ['supsetplus'	, '⫀'],
+\ ['submult'	, '⫁'],
+\ ['supmult'	, '⫂'],
+\ ['subedot'	, '⫃'],
+\ ['supedot'	, '⫄'],
+\ ['subseteqq'	, '⫅'],
+\ ['supseteqq'	, '⫆'],
+\ ['subsim'	, '⫇'],
+\ ['supsim'	, '⫈'],
+\ ['subsetapprox'	, '⫉'],
+\ ['supsetapprox'	, '⫊'],
+\ ['subsetneqq'	, '⫋'],
+\ ['supsetneqq'	, '⫌'],
+\ ['lsqhook'	, '⫍'],
+\ ['rsqhook'	, '⫎'],
+\ ['csub'	, '⫏'],
+\ ['csup'	, '⫐'],
+\ ['csube'	, '⫑'],
+\ ['csupe'	, '⫒'],
+\ ['subsup'	, '⫓'],
+\ ['supsub'	, '⫔'],
+\ ['subsub'	, '⫕'],
+\ ['supsup'	, '⫖'],
+\ ['suphsub'	, '⫗'],
+\ ['supdsub'	, '⫘'],
+\ ['forkv'	, '⫙'],
+\ ['topfork'	, '⫚'],
+\ ['mlcp'	, '⫛'],
+\ ['forks'	, '⫝̸'],
+\ ['forksnot'	, '⫝'],
+\ ['shortlefttack'	, '⫞'],
+\ ['shortdowntack'	, '⫟'],
+\ ['shortuptack'	, '⫠'],
+\ ['vDdash'	, '⫢'],
+\ ['dashV'	, '⫣'],
+\ ['Dashv'	, '⫤'],
+\ ['DashV'	, '⫥'],
+\ ['varVdash'	, '⫦'],
+\ ['Barv'	, '⫧'],
+\ ['vBar'	, '⫨'],
+\ ['vBarv'	, '⫩'],
+\ ['barV'	, '⫪'],
+\ ['Vbar'	, '⫫'],
+\ ['Not'	, '⫬'],
+\ ['bNot'	, '⫭'],
+\ ['revnmid'	, '⫮'],
+\ ['cirmid'	, '⫯'],
+\ ['midcir'	, '⫰'],
+\ ['nhpar'	, '⫲'],
+\ ['parsim'	, '⫳'],
+\ ['lllnest'	, '⫷'],
+\ ['gggnest'	, '⫸'],
+\ ['leqqslant'	, '⫹'],
+\ ['geqqslant'	, '⫺'],
+\ ['circleonleftarrow'	, '⬰'],
+\ ['leftthreearrows'	, '⬱'],
+\ ['leftarrowonoplus'	, '⬲'],
+\ ['longleftsquigarrow'	, '⬳'],
+\ ['nvtwoheadleftarrow'	, '⬴'],
+\ ['nVtwoheadleftarrow'	, '⬵'],
+\ ['twoheadmapsfrom'	, '⬶'],
+\ ['twoheadleftdbkarrow'	, '⬷'],
+\ ['leftdotarrow'	, '⬸'],
+\ ['nvleftarrowtail'	, '⬹'],
+\ ['nVleftarrowtail'	, '⬺'],
+\ ['twoheadleftarrowtail'	, '⬻'],
+\ ['nvtwoheadleftarrowtail'	, '⬼'],
+\ ['nVtwoheadleftarrowtail'	, '⬽'],
+\ ['leftarrowx'	, '⬾'],
+\ ['leftcurvedarrow'	, '⬿'],
+\ ['equalleftarrow'	, '⭀'],
+\ ['bsimilarleftarrow'	, '⭁'],
+\ ['leftarrowbackapprox'	, '⭂'],
+\ ['rightarrowgtr'	, '⭃'],
+\ ['rightarrowsupset'	, '⭄'],
+\ ['LLeftarrow'	, '⭅'],
+\ ['RRightarrow'	, '⭆'],
+\ ['bsimilarrightarrow'	, '⭇'],
+\ ['rightarrowbackapprox'	, '⭈'],
+\ ['similarleftarrow'	, '⭉'],
+\ ['leftarrowapprox'	, '⭊'],
+\ ['leftarrowbsimilar'	, '⭋'],
+\ ['rightarrowbsimilar'	, '⭌'],
+\ ['mbfA'	, '𝐀'],
+\ ['mbfB'	, '𝐁'],
+\ ['mbfC'	, '𝐂'],
+\ ['mbfD'	, '𝐃'],
+\ ['mbfE'	, '𝐄'],
+\ ['mbfF'	, '𝐅'],
+\ ['mbfG'	, '𝐆'],
+\ ['mbfH'	, '𝐇'],
+\ ['mbfI'	, '𝐈'],
+\ ['mbfJ'	, '𝐉'],
+\ ['mbfK'	, '𝐊'],
+\ ['mbfL'	, '𝐋'],
+\ ['mbfM'	, '𝐌'],
+\ ['mbfN'	, '𝐍'],
+\ ['mbfO'	, '𝐎'],
+\ ['mbfP'	, '𝐏'],
+\ ['mbfQ'	, '𝐐'],
+\ ['mbfR'	, '𝐑'],
+\ ['mbfS'	, '𝐒'],
+\ ['mbfT'	, '𝐓'],
+\ ['mbfU'	, '𝐔'],
+\ ['mbfV'	, '𝐕'],
+\ ['mbfW'	, '𝐖'],
+\ ['mbfX'	, '𝐗'],
+\ ['mbfY'	, '𝐘'],
+\ ['mbfZ'	, '𝐙'],
+\ ['mbfa'	, '𝐚'],
+\ ['mbfb'	, '𝐛'],
+\ ['mbfc'	, '𝐜'],
+\ ['mbfd'	, '𝐝'],
+\ ['mbfe'	, '𝐞'],
+\ ['mbff'	, '𝐟'],
+\ ['mbfg'	, '𝐠'],
+\ ['mbfh'	, '𝐡'],
+\ ['mbfi'	, '𝐢'],
+\ ['mbfj'	, '𝐣'],
+\ ['mbfk'	, '𝐤'],
+\ ['mbfl'	, '𝐥'],
+\ ['mbfm'	, '𝐦'],
+\ ['mbfn'	, '𝐧'],
+\ ['mbfo'	, '𝐨'],
+\ ['mbfp'	, '𝐩'],
+\ ['mbfq'	, '𝐪'],
+\ ['mbfr'	, '𝐫'],
+\ ['mbfs'	, '𝐬'],
+\ ['mbft'	, '𝐭'],
+\ ['mbfu'	, '𝐮'],
+\ ['mbfv'	, '𝐯'],
+\ ['mbfw'	, '𝐰'],
+\ ['mbfx'	, '𝐱'],
+\ ['mbfy'	, '𝐲'],
+\ ['mbfz'	, '𝐳'],
+\ ['mitA'	, '𝐴'],
+\ ['mitB'	, '𝐵'],
+\ ['mitC'	, '𝐶'],
+\ ['mitD'	, '𝐷'],
+\ ['mitE'	, '𝐸'],
+\ ['mitF'	, '𝐹'],
+\ ['mitG'	, '𝐺'],
+\ ['mitH'	, '𝐻'],
+\ ['mitI'	, '𝐼'],
+\ ['mitJ'	, '𝐽'],
+\ ['mitK'	, '𝐾'],
+\ ['mitL'	, '𝐿'],
+\ ['mitM'	, '𝑀'],
+\ ['mitN'	, '𝑁'],
+\ ['mitO'	, '𝑂'],
+\ ['mitP'	, '𝑃'],
+\ ['mitQ'	, '𝑄'],
+\ ['mitR'	, '𝑅'],
+\ ['mitS'	, '𝑆'],
+\ ['mitT'	, '𝑇'],
+\ ['mitU'	, '𝑈'],
+\ ['mitV'	, '𝑉'],
+\ ['mitW'	, '𝑊'],
+\ ['mitX'	, '𝑋'],
+\ ['mitY'	, '𝑌'],
+\ ['mitZ'	, '𝑍'],
+\ ['mita'	, '𝑎'],
+\ ['mitb'	, '𝑏'],
+\ ['mitc'	, '𝑐'],
+\ ['mitd'	, '𝑑'],
+\ ['mite'	, '𝑒'],
+\ ['mitf'	, '𝑓'],
+\ ['mitg'	, '𝑔'],
+\ ['miti'	, '𝑖'],
+\ ['mitj'	, '𝑗'],
+\ ['mitk'	, '𝑘'],
+\ ['mitl'	, '𝑙'],
+\ ['mitm'	, '𝑚'],
+\ ['mitn'	, '𝑛'],
+\ ['mito'	, '𝑜'],
+\ ['mitp'	, '𝑝'],
+\ ['mitq'	, '𝑞'],
+\ ['mitr'	, '𝑟'],
+\ ['mits'	, '𝑠'],
+\ ['mitt'	, '𝑡'],
+\ ['mitu'	, '𝑢'],
+\ ['mitv'	, '𝑣'],
+\ ['mitw'	, '𝑤'],
+\ ['mitx'	, '𝑥'],
+\ ['mity'	, '𝑦'],
+\ ['mitz'	, '𝑧'],
+\ ['imath'	, '𝚤'],
+\ ['jmath'	, '𝚥'],
+\ ['mbfitA'	, '𝑨'],
+\ ['mbfitB'	, '𝑩'],
+\ ['mbfitC'	, '𝑪'],
+\ ['mbfitD'	, '𝑫'],
+\ ['mbfitE'	, '𝑬'],
+\ ['mbfitF'	, '𝑭'],
+\ ['mbfitG'	, '𝑮'],
+\ ['mbfitH'	, '𝑯'],
+\ ['mbfitI'	, '𝑰'],
+\ ['mbfitJ'	, '𝑱'],
+\ ['mbfitK'	, '𝑲'],
+\ ['mbfitL'	, '𝑳'],
+\ ['mbfitM'	, '𝑴'],
+\ ['mbfitN'	, '𝑵'],
+\ ['mbfitO'	, '𝑶'],
+\ ['mbfitP'	, '𝑷'],
+\ ['mbfitQ'	, '𝑸'],
+\ ['mbfitR'	, '𝑹'],
+\ ['mbfitS'	, '𝑺'],
+\ ['mbfitT'	, '𝑻'],
+\ ['mbfitU'	, '𝑼'],
+\ ['mbfitV'	, '𝑽'],
+\ ['mbfitW'	, '𝑾'],
+\ ['mbfitX'	, '𝑿'],
+\ ['mbfitY'	, '𝒀'],
+\ ['mbfitZ'	, '𝒁'],
+\ ['mbfita'	, '𝒂'],
+\ ['mbfitb'	, '𝒃'],
+\ ['mbfitc'	, '𝒄'],
+\ ['mbfitd'	, '𝒅'],
+\ ['mbfite'	, '𝒆'],
+\ ['mbfitf'	, '𝒇'],
+\ ['mbfitg'	, '𝒈'],
+\ ['mbfith'	, '𝒉'],
+\ ['mbfiti'	, '𝒊'],
+\ ['mbfitj'	, '𝒋'],
+\ ['mbfitk'	, '𝒌'],
+\ ['mbfitl'	, '𝒍'],
+\ ['mbfitm'	, '𝒎'],
+\ ['mbfitn'	, '𝒏'],
+\ ['mbfito'	, '𝒐'],
+\ ['mbfitp'	, '𝒑'],
+\ ['mbfitq'	, '𝒒'],
+\ ['mbfitr'	, '𝒓'],
+\ ['mbfits'	, '𝒔'],
+\ ['mbfitt'	, '𝒕'],
+\ ['mbfitu'	, '𝒖'],
+\ ['mbfitv'	, '𝒗'],
+\ ['mbfitw'	, '𝒘'],
+\ ['mbfitx'	, '𝒙'],
+\ ['mbfity'	, '𝒚'],
+\ ['mbfitz'	, '𝒛'],
+\ ['mscrA'	, '𝒜'],
+\ ['mscrB'	, 'ℬ'],
+\ ['mscrC'	, '𝒞'],
+\ ['mscrD'	, '𝒟'],
+\ ['mscrE'	, 'ℰ'],
+\ ['mscrF'	, 'ℱ'],
+\ ['mscrG'	, '𝒢'],
+\ ['mscrH'	, 'ℋ'],
+\ ['mscrI'	, 'ℐ'],
+\ ['mscrJ'	, '𝒥'],
+\ ['mscrK'	, '𝒦'],
+\ ['mscrL'	, 'ℒ'],
+\ ['mscrM'	, 'ℳ'],
+\ ['mscrN'	, '𝒩'],
+\ ['mscrO'	, '𝒪'],
+\ ['mscrP'	, '𝒫'],
+\ ['mscrQ'	, '𝒬'],
+\ ['mscrR'	, 'ℛ'],
+\ ['mscrS'	, '𝒮'],
+\ ['mscrT'	, '𝒯'],
+\ ['mscrU'	, '𝒰'],
+\ ['mscrV'	, '𝒱'],
+\ ['mscrW'	, '𝒲'],
+\ ['mscrX'	, '𝒳'],
+\ ['mscrY'	, '𝒴'],
+\ ['mscrZ'	, '𝒵'],
+\ ['mscra'	, '𝒶'],
+\ ['mscrb'	, '𝒷'],
+\ ['mscrc'	, '𝒸'],
+\ ['mscrd'	, '𝒹'],
+\ ['mscre'	, 'ℯ'],
+\ ['mscrf'	, '𝒻'],
+\ ['mscrg'	, 'ℊ'],
+\ ['mscrh'	, '𝒽'],
+\ ['mscri'	, '𝒾'],
+\ ['mscrj'	, '𝒿'],
+\ ['mscrk'	, '𝓀'],
+\ ['mscrl'	, '𝓁'],
+\ ['mscrm'	, '𝓂'],
+\ ['mscrn'	, '𝓃'],
+\ ['mscro'	, 'ℴ'],
+\ ['mscrp'	, '𝓅'],
+\ ['mscrq'	, '𝓆'],
+\ ['mscrr'	, '𝓇'],
+\ ['mscrs'	, '𝓈'],
+\ ['mscrt'	, '𝓉'],
+\ ['mscru'	, '𝓊'],
+\ ['mscrv'	, '𝓋'],
+\ ['mscrw'	, '𝓌'],
+\ ['mscrx'	, '𝓍'],
+\ ['mscry'	, '𝓎'],
+\ ['mscrz'	, '𝓏'],
+\ ['mbfscrA'	, '𝓐'],
+\ ['mbfscrB'	, '𝓑'],
+\ ['mbfscrC'	, '𝓒'],
+\ ['mbfscrD'	, '𝓓'],
+\ ['mbfscrE'	, '𝓔'],
+\ ['mbfscrF'	, '𝓕'],
+\ ['mbfscrG'	, '𝓖'],
+\ ['mbfscrH'	, '𝓗'],
+\ ['mbfscrI'	, '𝓘'],
+\ ['mbfscrJ'	, '𝓙'],
+\ ['mbfscrK'	, '𝓚'],
+\ ['mbfscrL'	, '𝓛'],
+\ ['mbfscrM'	, '𝓜'],
+\ ['mbfscrN'	, '𝓝'],
+\ ['mbfscrO'	, '𝓞'],
+\ ['mbfscrP'	, '𝓟'],
+\ ['mbfscrQ'	, '𝓠'],
+\ ['mbfscrR'	, '𝓡'],
+\ ['mbfscrS'	, '𝓢'],
+\ ['mbfscrT'	, '𝓣'],
+\ ['mbfscrU'	, '𝓤'],
+\ ['mbfscrV'	, '𝓥'],
+\ ['mbfscrW'	, '𝓦'],
+\ ['mbfscrX'	, '𝓧'],
+\ ['mbfscrY'	, '𝓨'],
+\ ['mbfscrZ'	, '𝓩'],
+\ ['mbfscra'	, '𝓪'],
+\ ['mbfscrb'	, '𝓫'],
+\ ['mbfscrc'	, '𝓬'],
+\ ['mbfscrd'	, '𝓭'],
+\ ['mbfscre'	, '𝓮'],
+\ ['mbfscrf'	, '𝓯'],
+\ ['mbfscrg'	, '𝓰'],
+\ ['mbfscrh'	, '𝓱'],
+\ ['mbfscri'	, '𝓲'],
+\ ['mbfscrj'	, '𝓳'],
+\ ['mbfscrk'	, '𝓴'],
+\ ['mbfscrl'	, '𝓵'],
+\ ['mbfscrm'	, '𝓶'],
+\ ['mbfscrn'	, '𝓷'],
+\ ['mbfscro'	, '𝓸'],
+\ ['mbfscrp'	, '𝓹'],
+\ ['mbfscrq'	, '𝓺'],
+\ ['mbfscrr'	, '𝓻'],
+\ ['mbfscrs'	, '𝓼'],
+\ ['mbfscrt'	, '𝓽'],
+\ ['mbfscru'	, '𝓾'],
+\ ['mbfscrv'	, '𝓿'],
+\ ['mbfscrw'	, '𝔀'],
+\ ['mbfscrx'	, '𝔁'],
+\ ['mbfscry'	, '𝔂'],
+\ ['mbfscrz'	, '𝔃'],
+\ ['mfrakA'	, '𝔄'],
+\ ['mfrakB'	, '𝔅'],
+\ ['mfrakC'	, 'ℭ'],
+\ ['mfrakD'	, '𝔇'],
+\ ['mfrakE'	, '𝔈'],
+\ ['mfrakF'	, '𝔉'],
+\ ['mfrakG'	, '𝔊'],
+\ ['mfrakJ'	, '𝔍'],
+\ ['mfrakK'	, '𝔎'],
+\ ['mfrakL'	, '𝔏'],
+\ ['mfrakM'	, '𝔐'],
+\ ['mfrakN'	, '𝔑'],
+\ ['mfrakO'	, '𝔒'],
+\ ['mfrakP'	, '𝔓'],
+\ ['mfrakQ'	, '𝔔'],
+\ ['mfrakS'	, '𝔖'],
+\ ['mfrakT'	, '𝔗'],
+\ ['mfrakU'	, '𝔘'],
+\ ['mfrakV'	, '𝔙'],
+\ ['mfrakW'	, '𝔚'],
+\ ['mfrakX'	, '𝔛'],
+\ ['mfrakY'	, '𝔜'],
+\ ['mfraka'	, '𝔞'],
+\ ['mfrakb'	, '𝔟'],
+\ ['mfrakc'	, '𝔠'],
+\ ['mfrakd'	, '𝔡'],
+\ ['mfrake'	, '𝔢'],
+\ ['mfrakf'	, '𝔣'],
+\ ['mfrakg'	, '𝔤'],
+\ ['mfrakh'	, '𝔥'],
+\ ['mfraki'	, '𝔦'],
+\ ['mfrakj'	, '𝔧'],
+\ ['mfrakk'	, '𝔨'],
+\ ['mfrakl'	, '𝔩'],
+\ ['mfrakm'	, '𝔪'],
+\ ['mfrakn'	, '𝔫'],
+\ ['mfrako'	, '𝔬'],
+\ ['mfrakp'	, '𝔭'],
+\ ['mfrakq'	, '𝔮'],
+\ ['mfrakr'	, '𝔯'],
+\ ['mfraks'	, '𝔰'],
+\ ['mfrakt'	, '𝔱'],
+\ ['mfraku'	, '𝔲'],
+\ ['mfrakv'	, '𝔳'],
+\ ['mfrakw'	, '𝔴'],
+\ ['mfrakx'	, '𝔵'],
+\ ['mfraky'	, '𝔶'],
+\ ['mfrakz'	, '𝔷'],
+\ ['BbbA'	, '𝔸'],
+\ ['BbbB'	, '𝔹'],
+\ ['BbbC'	, 'ℂ'],
+\ ['BbbD'	, '𝔻'],
+\ ['BbbE'	, '𝔼'],
+\ ['BbbF'	, '𝔽'],
+\ ['BbbG'	, '𝔾'],
+\ ['BbbH'	, 'ℍ'],
+\ ['BbbI'	, '𝕀'],
+\ ['BbbJ'	, '𝕁'],
+\ ['BbbK'	, '𝕂'],
+\ ['BbbL'	, '𝕃'],
+\ ['BbbM'	, '𝕄'],
+\ ['BbbN'	, 'ℕ'],
+\ ['BbbO'	, '𝕆'],
+\ ['BbbP'	, 'ℙ'],
+\ ['BbbQ'	, 'ℚ'],
+\ ['BbbR'	, 'ℝ'],
+\ ['BbbS'	, '𝕊'],
+\ ['BbbT'	, '𝕋'],
+\ ['BbbU'	, '𝕌'],
+\ ['BbbV'	, '𝕍'],
+\ ['BbbW'	, '𝕎'],
+\ ['BbbX'	, '𝕏'],
+\ ['BbbY'	, '𝕐'],
+\ ['BbbZ'	, 'ℤ'],
+\ ['Bbba'	, '𝕒'],
+\ ['Bbbb'	, '𝕓'],
+\ ['Bbbc'	, '𝕔'],
+\ ['Bbbd'	, '𝕕'],
+\ ['Bbbe'	, '𝕖'],
+\ ['Bbbf'	, '𝕗'],
+\ ['Bbbg'	, '𝕘'],
+\ ['Bbbh'	, '𝕙'],
+\ ['Bbbi'	, '𝕚'],
+\ ['Bbbj'	, '𝕛'],
+\ ['Bbbk'	, '𝕜'],
+\ ['Bbbl'	, '𝕝'],
+\ ['Bbbm'	, '𝕞'],
+\ ['Bbbn'	, '𝕟'],
+\ ['Bbbo'	, '𝕠'],
+\ ['Bbbp'	, '𝕡'],
+\ ['Bbbq'	, '𝕢'],
+\ ['Bbbr'	, '𝕣'],
+\ ['Bbbs'	, '𝕤'],
+\ ['Bbbt'	, '𝕥'],
+\ ['Bbbu'	, '𝕦'],
+\ ['Bbbv'	, '𝕧'],
+\ ['Bbbw'	, '𝕨'],
+\ ['Bbbx'	, '𝕩'],
+\ ['Bbby'	, '𝕪'],
+\ ['Bbbz'	, '𝕫'],
+\ ['mbffrakA'	, '𝕬'],
+\ ['mbffrakB'	, '𝕭'],
+\ ['mbffrakC'	, '𝕮'],
+\ ['mbffrakD'	, '𝕯'],
+\ ['mbffrakE'	, '𝕰'],
+\ ['mbffrakF'	, '𝕱'],
+\ ['mbffrakG'	, '𝕲'],
+\ ['mbffrakH'	, '𝕳'],
+\ ['mbffrakI'	, '𝕴'],
+\ ['mbffrakJ'	, '𝕵'],
+\ ['mbffrakK'	, '𝕶'],
+\ ['mbffrakL'	, '𝕷'],
+\ ['mbffrakM'	, '𝕸'],
+\ ['mbffrakN'	, '𝕹'],
+\ ['mbffrakO'	, '𝕺'],
+\ ['mbffrakP'	, '𝕻'],
+\ ['mbffrakQ'	, '𝕼'],
+\ ['mbffrakR'	, '𝕽'],
+\ ['mbffrakS'	, '𝕾'],
+\ ['mbffrakT'	, '𝕿'],
+\ ['mbffrakU'	, '𝖀'],
+\ ['mbffrakV'	, '𝖁'],
+\ ['mbffrakW'	, '𝖂'],
+\ ['mbffrakX'	, '𝖃'],
+\ ['mbffrakY'	, '𝖄'],
+\ ['mbffrakZ'	, '𝖅'],
+\ ['mbffraka'	, '𝖆'],
+\ ['mbffrakb'	, '𝖇'],
+\ ['mbffrakc'	, '𝖈'],
+\ ['mbffrakd'	, '𝖉'],
+\ ['mbffrake'	, '𝖊'],
+\ ['mbffrakf'	, '𝖋'],
+\ ['mbffrakg'	, '𝖌'],
+\ ['mbffrakh'	, '𝖍'],
+\ ['mbffraki'	, '𝖎'],
+\ ['mbffrakj'	, '𝖏'],
+\ ['mbffrakk'	, '𝖐'],
+\ ['mbffrakl'	, '𝖑'],
+\ ['mbffrakm'	, '𝖒'],
+\ ['mbffrakn'	, '𝖓'],
+\ ['mbffrako'	, '𝖔'],
+\ ['mbffrakp'	, '𝖕'],
+\ ['mbffrakq'	, '𝖖'],
+\ ['mbffrakr'	, '𝖗'],
+\ ['mbffraks'	, '𝖘'],
+\ ['mbffrakt'	, '𝖙'],
+\ ['mbffraku'	, '𝖚'],
+\ ['mbffrakv'	, '𝖛'],
+\ ['mbffrakw'	, '𝖜'],
+\ ['mbffrakx'	, '𝖝'],
+\ ['mbffraky'	, '𝖞'],
+\ ['mbffrakz'	, '𝖟'],
+\ ['msansA'	, '𝖠'],
+\ ['msansB'	, '𝖡'],
+\ ['msansC'	, '𝖢'],
+\ ['msansD'	, '𝖣'],
+\ ['msansE'	, '𝖤'],
+\ ['msansF'	, '𝖥'],
+\ ['msansG'	, '𝖦'],
+\ ['msansH'	, '𝖧'],
+\ ['msansI'	, '𝖨'],
+\ ['msansJ'	, '𝖩'],
+\ ['msansK'	, '𝖪'],
+\ ['msansL'	, '𝖫'],
+\ ['msansM'	, '𝖬'],
+\ ['msansN'	, '𝖭'],
+\ ['msansO'	, '𝖮'],
+\ ['msansP'	, '𝖯'],
+\ ['msansQ'	, '𝖰'],
+\ ['msansR'	, '𝖱'],
+\ ['msansS'	, '𝖲'],
+\ ['msansT'	, '𝖳'],
+\ ['msansU'	, '𝖴'],
+\ ['msansV'	, '𝖵'],
+\ ['msansW'	, '𝖶'],
+\ ['msansX'	, '𝖷'],
+\ ['msansY'	, '𝖸'],
+\ ['msansZ'	, '𝖹'],
+\ ['msansa'	, '𝖺'],
+\ ['msansb'	, '𝖻'],
+\ ['msansc'	, '𝖼'],
+\ ['msansd'	, '𝖽'],
+\ ['msanse'	, '𝖾'],
+\ ['msansf'	, '𝖿'],
+\ ['msansg'	, '𝗀'],
+\ ['msansh'	, '𝗁'],
+\ ['msansi'	, '𝗂'],
+\ ['msansj'	, '𝗃'],
+\ ['msansk'	, '𝗄'],
+\ ['msansl'	, '𝗅'],
+\ ['msansm'	, '𝗆'],
+\ ['msansn'	, '𝗇'],
+\ ['msanso'	, '𝗈'],
+\ ['msansp'	, '𝗉'],
+\ ['msansq'	, '𝗊'],
+\ ['msansr'	, '𝗋'],
+\ ['msanss'	, '𝗌'],
+\ ['msanst'	, '𝗍'],
+\ ['msansu'	, '𝗎'],
+\ ['msansv'	, '𝗏'],
+\ ['msansw'	, '𝗐'],
+\ ['msansx'	, '𝗑'],
+\ ['msansy'	, '𝗒'],
+\ ['msansz'	, '𝗓'],
+\ ['mbfsansA'	, '𝗔'],
+\ ['mbfsansB'	, '𝗕'],
+\ ['mbfsansC'	, '𝗖'],
+\ ['mbfsansD'	, '𝗗'],
+\ ['mbfsansE'	, '𝗘'],
+\ ['mbfsansF'	, '𝗙'],
+\ ['mbfsansG'	, '𝗚'],
+\ ['mbfsansH'	, '𝗛'],
+\ ['mbfsansI'	, '𝗜'],
+\ ['mbfsansJ'	, '𝗝'],
+\ ['mbfsansK'	, '𝗞'],
+\ ['mbfsansL'	, '𝗟'],
+\ ['mbfsansM'	, '𝗠'],
+\ ['mbfsansN'	, '𝗡'],
+\ ['mbfsansO'	, '𝗢'],
+\ ['mbfsansP'	, '𝗣'],
+\ ['mbfsansQ'	, '𝗤'],
+\ ['mbfsansR'	, '𝗥'],
+\ ['mbfsansS'	, '𝗦'],
+\ ['mbfsansT'	, '𝗧'],
+\ ['mbfsansU'	, '𝗨'],
+\ ['mbfsansV'	, '𝗩'],
+\ ['mbfsansW'	, '𝗪'],
+\ ['mbfsansX'	, '𝗫'],
+\ ['mbfsansY'	, '𝗬'],
+\ ['mbfsansZ'	, '𝗭'],
+\ ['mbfsansa'	, '𝗮'],
+\ ['mbfsansb'	, '𝗯'],
+\ ['mbfsansc'	, '𝗰'],
+\ ['mbfsansd'	, '𝗱'],
+\ ['mbfsanse'	, '𝗲'],
+\ ['mbfsansf'	, '𝗳'],
+\ ['mbfsansg'	, '𝗴'],
+\ ['mbfsansh'	, '𝗵'],
+\ ['mbfsansi'	, '𝗶'],
+\ ['mbfsansj'	, '𝗷'],
+\ ['mbfsansk'	, '𝗸'],
+\ ['mbfsansl'	, '𝗹'],
+\ ['mbfsansm'	, '𝗺'],
+\ ['mbfsansn'	, '𝗻'],
+\ ['mbfsanso'	, '𝗼'],
+\ ['mbfsansp'	, '𝗽'],
+\ ['mbfsansq'	, '𝗾'],
+\ ['mbfsansr'	, '𝗿'],
+\ ['mbfsanss'	, '𝘀'],
+\ ['mbfsanst'	, '𝘁'],
+\ ['mbfsansu'	, '𝘂'],
+\ ['mbfsansv'	, '𝘃'],
+\ ['mbfsansw'	, '𝘄'],
+\ ['mbfsansx'	, '𝘅'],
+\ ['mbfsansy'	, '𝘆'],
+\ ['mbfsansz'	, '𝘇'],
+\ ['mitsansA'	, '𝘈'],
+\ ['mitsansB'	, '𝘉'],
+\ ['mitsansC'	, '𝘊'],
+\ ['mitsansD'	, '𝘋'],
+\ ['mitsansE'	, '𝘌'],
+\ ['mitsansF'	, '𝘍'],
+\ ['mitsansG'	, '𝘎'],
+\ ['mitsansH'	, '𝘏'],
+\ ['mitsansI'	, '𝘐'],
+\ ['mitsansJ'	, '𝘑'],
+\ ['mitsansK'	, '𝘒'],
+\ ['mitsansL'	, '𝘓'],
+\ ['mitsansM'	, '𝘔'],
+\ ['mitsansN'	, '𝘕'],
+\ ['mitsansO'	, '𝘖'],
+\ ['mitsansP'	, '𝘗'],
+\ ['mitsansQ'	, '𝘘'],
+\ ['mitsansR'	, '𝘙'],
+\ ['mitsansS'	, '𝘚'],
+\ ['mitsansT'	, '𝘛'],
+\ ['mitsansU'	, '𝘜'],
+\ ['mitsansV'	, '𝘝'],
+\ ['mitsansW'	, '𝘞'],
+\ ['mitsansX'	, '𝘟'],
+\ ['mitsansY'	, '𝘠'],
+\ ['mitsansZ'	, '𝘡'],
+\ ['mitsansa'	, '𝘢'],
+\ ['mitsansb'	, '𝘣'],
+\ ['mitsansc'	, '𝘤'],
+\ ['mitsansd'	, '𝘥'],
+\ ['mitsanse'	, '𝘦'],
+\ ['mitsansf'	, '𝘧'],
+\ ['mitsansg'	, '𝘨'],
+\ ['mitsansh'	, '𝘩'],
+\ ['mitsansi'	, '𝘪'],
+\ ['mitsansj'	, '𝘫'],
+\ ['mitsansk'	, '𝘬'],
+\ ['mitsansl'	, '𝘭'],
+\ ['mitsansm'	, '𝘮'],
+\ ['mitsansn'	, '𝘯'],
+\ ['mitsanso'	, '𝘰'],
+\ ['mitsansp'	, '𝘱'],
+\ ['mitsansq'	, '𝘲'],
+\ ['mitsansr'	, '𝘳'],
+\ ['mitsanss'	, '𝘴'],
+\ ['mitsanst'	, '𝘵'],
+\ ['mitsansu'	, '𝘶'],
+\ ['mitsansv'	, '𝘷'],
+\ ['mitsansw'	, '𝘸'],
+\ ['mitsansx'	, '𝘹'],
+\ ['mitsansy'	, '𝘺'],
+\ ['mitsansz'	, '𝘻'],
+\ ['mbfitsansA'	, '𝘼'],
+\ ['mbfitsansB'	, '𝘽'],
+\ ['mbfitsansC'	, '𝘾'],
+\ ['mbfitsansD'	, '𝘿'],
+\ ['mbfitsansE'	, '𝙀'],
+\ ['mbfitsansF'	, '𝙁'],
+\ ['mbfitsansG'	, '𝙂'],
+\ ['mbfitsansH'	, '𝙃'],
+\ ['mbfitsansI'	, '𝙄'],
+\ ['mbfitsansJ'	, '𝙅'],
+\ ['mbfitsansK'	, '𝙆'],
+\ ['mbfitsansL'	, '𝙇'],
+\ ['mbfitsansM'	, '𝙈'],
+\ ['mbfitsansN'	, '𝙉'],
+\ ['mbfitsansO'	, '𝙊'],
+\ ['mbfitsansP'	, '𝙋'],
+\ ['mbfitsansQ'	, '𝙌'],
+\ ['mbfitsansR'	, '𝙍'],
+\ ['mbfitsansS'	, '𝙎'],
+\ ['mbfitsansT'	, '𝙏'],
+\ ['mbfitsansU'	, '𝙐'],
+\ ['mbfitsansV'	, '𝙑'],
+\ ['mbfitsansW'	, '𝙒'],
+\ ['mbfitsansX'	, '𝙓'],
+\ ['mbfitsansY'	, '𝙔'],
+\ ['mbfitsansZ'	, '𝙕'],
+\ ['mbfitsansa'	, '𝙖'],
+\ ['mbfitsansb'	, '𝙗'],
+\ ['mbfitsansc'	, '𝙘'],
+\ ['mbfitsansd'	, '𝙙'],
+\ ['mbfitsanse'	, '𝙚'],
+\ ['mbfitsansf'	, '𝙛'],
+\ ['mbfitsansg'	, '𝙜'],
+\ ['mbfitsansh'	, '𝙝'],
+\ ['mbfitsansi'	, '𝙞'],
+\ ['mbfitsansj'	, '𝙟'],
+\ ['mbfitsansk'	, '𝙠'],
+\ ['mbfitsansl'	, '𝙡'],
+\ ['mbfitsansm'	, '𝙢'],
+\ ['mbfitsansn'	, '𝙣'],
+\ ['mbfitsanso'	, '𝙤'],
+\ ['mbfitsansp'	, '𝙥'],
+\ ['mbfitsansq'	, '𝙦'],
+\ ['mbfitsansr'	, '𝙧'],
+\ ['mbfitsanss'	, '𝙨'],
+\ ['mbfitsanst'	, '𝙩'],
+\ ['mbfitsansu'	, '𝙪'],
+\ ['mbfitsansv'	, '𝙫'],
+\ ['mbfitsansw'	, '𝙬'],
+\ ['mbfitsansx'	, '𝙭'],
+\ ['mbfitsansy'	, '𝙮'],
+\ ['mbfitsansz'	, '𝙯'],
+\ ['mttA'	, '𝙰'],
+\ ['mttB'	, '𝙱'],
+\ ['mttC'	, '𝙲'],
+\ ['mttD'	, '𝙳'],
+\ ['mttE'	, '𝙴'],
+\ ['mttF'	, '𝙵'],
+\ ['mttG'	, '𝙶'],
+\ ['mttH'	, '𝙷'],
+\ ['mttI'	, '𝙸'],
+\ ['mttJ'	, '𝙹'],
+\ ['mttK'	, '𝙺'],
+\ ['mttL'	, '𝙻'],
+\ ['mttM'	, '𝙼'],
+\ ['mttN'	, '𝙽'],
+\ ['mttO'	, '𝙾'],
+\ ['mttP'	, '𝙿'],
+\ ['mttQ'	, '𝚀'],
+\ ['mttR'	, '𝚁'],
+\ ['mttS'	, '𝚂'],
+\ ['mttT'	, '𝚃'],
+\ ['mttU'	, '𝚄'],
+\ ['mttV'	, '𝚅'],
+\ ['mttW'	, '𝚆'],
+\ ['mttX'	, '𝚇'],
+\ ['mttY'	, '𝚈'],
+\ ['mttZ'	, '𝚉'],
+\ ['mtta'	, '𝚊'],
+\ ['mttb'	, '𝚋'],
+\ ['mttc'	, '𝚌'],
+\ ['mttd'	, '𝚍'],
+\ ['mtte'	, '𝚎'],
+\ ['mttf'	, '𝚏'],
+\ ['mttg'	, '𝚐'],
+\ ['mtth'	, '𝚑'],
+\ ['mtti'	, '𝚒'],
+\ ['mttj'	, '𝚓'],
+\ ['mttk'	, '𝚔'],
+\ ['mttl'	, '𝚕'],
+\ ['mttm'	, '𝚖'],
+\ ['mttn'	, '𝚗'],
+\ ['mtto'	, '𝚘'],
+\ ['mttp'	, '𝚙'],
+\ ['mttq'	, '𝚚'],
+\ ['mttr'	, '𝚛'],
+\ ['mtts'	, '𝚜'],
+\ ['mttt'	, '𝚝'],
+\ ['mttu'	, '𝚞'],
+\ ['mttv'	, '𝚟'],
+\ ['mttw'	, '𝚠'],
+\ ['mttx'	, '𝚡'],
+\ ['mtty'	, '𝚢'],
+\ ['mttz𝚣'	, '𝚣'],
+\ ['upAlpha'	, 'Α'],
+\ ['upBeta'	, 'Β'],
+\ ['upGamma'	, 'Γ'],
+\ ['upDelta'	, 'Δ'],
+\ ['upEpsilon'	, 'Ε'],
+\ ['upZeta'	, 'Ζ'],
+\ ['upEta'	, 'Η'],
+\ ['upTheta'	, 'Θ'],
+\ ['upIota'	, 'Ι'],
+\ ['upKappa'	, 'Κ'],
+\ ['upLambda'	, 'Λ'],
+\ ['upMu'	, 'Μ'],
+\ ['upNu'	, 'Ν'],
+\ ['upXi'	, 'Ξ'],
+\ ['upOmicron'	, 'Ο'],
+\ ['upPi'	, 'Π'],
+\ ['upRho'	, 'Ρ'],
+\ ['upSigma'	, 'Σ'],
+\ ['upTau'	, 'Τ'],
+\ ['upUpsilon'	, 'Υ'],
+\ ['upPhi'	, 'Φ'],
+\ ['upChi'	, 'Χ'],
+\ ['upPsi'	, 'Ψ'],
+\ ['upOmega'	, 'Ω'],
+\ ['nabla'	, '∇'],
+\ ['upalpha'	, 'α'],
+\ ['upbeta'	, 'β'],
+\ ['upgamma'	, 'γ'],
+\ ['updelta'	, 'δ'],
+\ ['upepsilon'	, 'ε'],
+\ ['upzeta'	, 'ζ'],
+\ ['upeta'	, 'η'],
+\ ['uptheta'	, 'θ'],
+\ ['upiota'	, 'ι'],
+\ ['upkappa'	, 'κ'],
+\ ['uplambda'	, 'λ'],
+\ ['upmu'	, 'μ'],
+\ ['upnu'	, 'ν'],
+\ ['upxi'	, 'ξ'],
+\ ['upomicron'	, 'ο'],
+\ ['uppi'	, 'π'],
+\ ['uprho'	, 'ρ'],
+\ ['upvarsigma'	, 'ς'],
+\ ['upsigma'	, 'σ'],
+\ ['uptau'	, 'τ'],
+\ ['upupsilon'	, 'υ'],
+\ ['upvarphi'	, 'φ'],
+\ ['upchi'	, 'χ'],
+\ ['uppsi'	, 'ψ'],
+\ ['upomega'	, 'ω'],
+\ ['upvarbeta'	, '∂'],
+\ ['upvarepsilon'	, 'ϵ'],
+\ ['upvartheta'	, 'ϑ'],
+\ ['upvarkappa'	, 'ϰ'],
+\ ['upphi'	, 'ϕ'],
+\ ['upvarrho'	, 'ϱ'],
+\ ['upvarpi'	, 'ϖ'],
+\ ['upDigamma'	, 'Ϝ'],
+\ ['updigamma'	, 'ϝ'],
+\ ['mbfAlpha'	, '𝚨'],
+\ ['mbfBeta'	, '𝚩'],
+\ ['mbfGamma'	, '𝚪'],
+\ ['mbfDelta'	, '𝚫'],
+\ ['mbfEpsilon'	, '𝚬'],
+\ ['mbfZeta'	, '𝚭'],
+\ ['mbfEta'	, '𝚮'],
+\ ['mbfTheta'	, '𝚯'],
+\ ['mbfIota'	, '𝚰'],
+\ ['mbfKappa'	, '𝚱'],
+\ ['mbfLambda'	, '𝚲'],
+\ ['mbfMu'	, '𝚳'],
+\ ['mbfNu'	, '𝚴'],
+\ ['mbfXi'	, '𝚵'],
+\ ['mbfOmicron'	, '𝚶'],
+\ ['mbfPi'	, '𝚷'],
+\ ['mbfRho'	, '𝚸'],
+\ ['mbfvarTheta'	, '𝚹'],
+\ ['mbfSigma'	, '𝚺'],
+\ ['mbfTau'	, '𝚻'],
+\ ['mbfUpsilon'	, '𝚼'],
+\ ['mbfPhi'	, '𝚽'],
+\ ['mbfChi'	, '𝚾'],
+\ ['mbfPsi'	, '𝚿'],
+\ ['mbfOmega'	, '𝛀'],
+\ ['mbfnabla'	, '𝛁'],
+\ ['mbfalpha'	, '𝛂'],
+\ ['mbfbeta'	, '𝛃'],
+\ ['mbfgamma'	, '𝛄'],
+\ ['mbfdelta'	, '𝛅'],
+\ ['mbfepsilon'	, '𝛆'],
+\ ['mbfzeta'	, '𝛇'],
+\ ['mbfeta'	, '𝛈'],
+\ ['mbftheta'	, '𝛉'],
+\ ['mbfiota'	, '𝛊'],
+\ ['mbfkappa'	, '𝛋'],
+\ ['mbflambda'	, '𝛌'],
+\ ['mbfmu'	, '𝛍'],
+\ ['mbfnu'	, '𝛎'],
+\ ['mbfxi'	, '𝛏'],
+\ ['mbfomicron'	, '𝛐'],
+\ ['mbfpi'	, '𝛑'],
+\ ['mbfrho'	, '𝛒'],
+\ ['mbfvarsigma'	, '𝛓'],
+\ ['mbfsigma'	, '𝛔'],
+\ ['mbftau'	, '𝛕'],
+\ ['mbfupsilon'	, '𝛖'],
+\ ['mbfvarphi'	, '𝛗'],
+\ ['mbfchi'	, '𝛘'],
+\ ['mbfpsi'	, '𝛙'],
+\ ['mbfomega'	, '𝛚'],
+\ ['mbfpartial'	, '𝛛'],
+\ ['mbfvarepsilon'	, '𝛜'],
+\ ['mbfvartheta'	, '𝛝'],
+\ ['mbfvarkappa'	, '𝛞'],
+\ ['mbfphi'	, '𝛟'],
+\ ['mbfvarrho'	, '𝛠'],
+\ ['mbfvarpi'	, '𝛡'],
+\ ['mitAlpha'	, '𝛢'],
+\ ['mitBeta'	, '𝛣'],
+\ ['mitGamma'	, '𝛤'],
+\ ['mitDelta'	, '𝛥'],
+\ ['mitEpsilon'	, '𝛦'],
+\ ['mitZeta'	, '𝛧'],
+\ ['mitEta'	, '𝛨'],
+\ ['mitTheta'	, '𝛩'],
+\ ['mitIota'	, '𝛪'],
+\ ['mitKappa'	, '𝛫'],
+\ ['mitLambda'	, '𝛬'],
+\ ['mitMu'	, '𝛭'],
+\ ['mitNu'	, '𝛮'],
+\ ['mitXi'	, '𝛯'],
+\ ['mitOmicron'	, '𝛰'],
+\ ['mitPi'	, '𝛱'],
+\ ['mitRho'	, '𝛲'],
+\ ['mitvarTheta'	, '𝛳'],
+\ ['mitSigma'	, '𝛴'],
+\ ['mitTau'	, '𝛵'],
+\ ['mitUpsilon'	, '𝛶'],
+\ ['mitPhi'	, '𝛷'],
+\ ['mitChi'	, '𝛸'],
+\ ['mitPsi'	, '𝛹'],
+\ ['mitOmega'	, '𝛺'],
+\ ['mitnabla'	, '𝛻'],
+\ ['mitalpha'	, '𝛼'],
+\ ['mitbeta'	, '𝛽'],
+\ ['mitgamma'	, '𝛾'],
+\ ['mitdelta'	, '𝛿'],
+\ ['mitepsilon'	, '𝜀'],
+\ ['mitzeta'	, '𝜁'],
+\ ['miteta'	, '𝜂'],
+\ ['mittheta'	, '𝜃'],
+\ ['mitiota'	, '𝜄'],
+\ ['mitkappa'	, '𝜅'],
+\ ['mitlambda'	, '𝜆'],
+\ ['mitmu'	, '𝜇'],
+\ ['mitnu'	, '𝜈'],
+\ ['mitxi'	, '𝜉'],
+\ ['mitomicron'	, '𝜊'],
+\ ['mitpi'	, '𝜋'],
+\ ['mitrho'	, '𝜌'],
+\ ['mitvarsigma'	, '𝜍'],
+\ ['mitsigma'	, '𝜎'],
+\ ['mittau'	, '𝜏'],
+\ ['mitupsilon'	, '𝜐'],
+\ ['mitphi'	, '𝜑'],
+\ ['mitchi'	, '𝜒'],
+\ ['mitpsi'	, '𝜓'],
+\ ['mitomega'	, '𝜔'],
+\ ['mitpartial'	, '𝜕'],
+\ ['mitvarepsilon'	, '𝜖'],
+\ ['mitvartheta'	, '𝜗'],
+\ ['mitvarkappa'	, '𝜘'],
+\ ['mitvarphi'	, '𝜙'],
+\ ['mitvarrho'	, '𝜚'],
+\ ['mitvarpi'	, '𝜛'],
+\ ['mbfitAlpha'	, '𝜜'],
+\ ['mbfitBeta'	, '𝜝'],
+\ ['mbfitGamma'	, '𝜞'],
+\ ['mbfitDelta'	, '𝜟'],
+\ ['mbfitEpsilon'	, '𝜠'],
+\ ['mbfitZeta'	, '𝜡'],
+\ ['mbfitEta'	, '𝜢'],
+\ ['mbfitTheta'	, '𝜣'],
+\ ['mbfitIota'	, '𝜤'],
+\ ['mbfitKappa'	, '𝜥'],
+\ ['mbfitLambda'	, '𝜦'],
+\ ['mbfitMu'	, '𝜧'],
+\ ['mbfitNu'	, '𝜨'],
+\ ['mbfitXi'	, '𝜩'],
+\ ['mbfitOmicron'	, '𝜪'],
+\ ['mbfitPi'	, '𝜫'],
+\ ['mbfitRho'	, '𝜬'],
+\ ['mbfitvarTheta'	, '𝜭'],
+\ ['mbfitSigma'	, '𝜮'],
+\ ['mbfitTau'	, '𝜯'],
+\ ['mbfitUpsilon'	, '𝜰'],
+\ ['mbfitPhi'	, '𝜱'],
+\ ['mbfitChi'	, '𝜲'],
+\ ['mbfitPsi'	, '𝜳'],
+\ ['mbfitOmega'	, '𝜴'],
+\ ['mbfitnabla'	, '𝜵'],
+\ ['mbfitalpha'	, '𝜶'],
+\ ['mbfitbeta'	, '𝜷'],
+\ ['mbfitgamma'	, '𝜸'],
+\ ['mbfitdelta'	, '𝜹'],
+\ ['mbfitepsilon'	, '𝜺'],
+\ ['mbfitzeta'	, '𝜻'],
+\ ['mbfiteta'	, '𝜼'],
+\ ['mbfittheta'	, '𝜽'],
+\ ['mbfitiota'	, '𝜾'],
+\ ['mbfitkappa'	, '𝜿'],
+\ ['mbfitlambda'	, '𝝀'],
+\ ['mbfitmu'	, '𝝁'],
+\ ['mbfitnu'	, '𝝂'],
+\ ['mbfitxi'	, '𝝃'],
+\ ['mbfitomicron'	, '𝝄'],
+\ ['mbfitpi'	, '𝝅'],
+\ ['mbfitrho'	, '𝝆'],
+\ ['mbfitvarsigma'	, '𝝇'],
+\ ['mbfitsigma'	, '𝝈'],
+\ ['mbfittau'	, '𝝉'],
+\ ['mbfitupsilon'	, '𝝊'],
+\ ['mbfitphi'	, '𝝋'],
+\ ['mbfitchi'	, '𝝌'],
+\ ['mbfitpsi'	, '𝝍'],
+\ ['mbfitomega'	, '𝝎'],
+\ ['mbfitpartial'	, '𝝏'],
+\ ['mbfitvarepsilon'	, '𝝐'],
+\ ['mbfitvartheta'	, '𝝑'],
+\ ['mbfitvarkappa'	, '𝝒'],
+\ ['mbfitvarphi'	, '𝝓'],
+\ ['mbfitvarrho'	, '𝝔'],
+\ ['mbfitvarpi'	, '𝝕'],
+\ ['mbfsansAlpha'	, '𝝖'],
+\ ['mbfsansBeta'	, '𝝗'],
+\ ['mbfsansGamma'	, '𝝘'],
+\ ['mbfsansDelta'	, '𝝙'],
+\ ['mbfsansEpsilon'	, '𝝚'],
+\ ['mbfsansZeta'	, '𝝛'],
+\ ['mbfsansEta'	, '𝝜'],
+\ ['mbfsansTheta'	, '𝝝'],
+\ ['mbfsansIota'	, '𝝞'],
+\ ['mbfsansKappa'	, '𝝟'],
+\ ['mbfsansLambda'	, '𝝠'],
+\ ['mbfsansMu'	, '𝝡'],
+\ ['mbfsansNu'	, '𝝢'],
+\ ['mbfsansXi'	, '𝝣'],
+\ ['mbfsansOmicron'	, '𝝤'],
+\ ['mbfsansPi'	, '𝝥'],
+\ ['mbfsansRho'	, '𝝦'],
+\ ['mbfsansvarTheta'	, '𝝧'],
+\ ['mbfsansSigma'	, '𝝨'],
+\ ['mbfsansTau'	, '𝝩'],
+\ ['mbfsansUpsilon'	, '𝝪'],
+\ ['mbfsansPhi'	, '𝝫'],
+\ ['mbfsansChi'	, '𝝬'],
+\ ['mbfsansPsi'	, '𝝭'],
+\ ['mbfsansOmega'	, '𝝮'],
+\ ['mbfsansnabla'	, '𝝯'],
+\ ['mbfsansalpha'	, '𝝰'],
+\ ['mbfsansbeta'	, '𝝱'],
+\ ['mbfsansgamma'	, '𝝲'],
+\ ['mbfsansdelta'	, '𝝳'],
+\ ['mbfsansepsilon'	, '𝝴'],
+\ ['mbfsanszeta'	, '𝝵'],
+\ ['mbfsanseta'	, '𝝶'],
+\ ['mbfsanstheta'	, '𝝷'],
+\ ['mbfsansiota'	, '𝝸'],
+\ ['mbfsanskappa'	, '𝝹'],
+\ ['mbfsanslambda'	, '𝝺'],
+\ ['mbfsansmu'	, '𝝻'],
+\ ['mbfsansnu'	, '𝝼'],
+\ ['mbfsansxi'	, '𝝽'],
+\ ['mbfsansomicron'	, '𝝾'],
+\ ['mbfsanspi'	, '𝝿'],
+\ ['mbfsansrho'	, '𝞀'],
+\ ['mbfsansvarsigma'	, '𝞁'],
+\ ['mbfsanssigma'	, '𝞂'],
+\ ['mbfsanstau'	, '𝞃'],
+\ ['mbfsansupsilon'	, '𝞄'],
+\ ['mbfsansphi'	, '𝞅'],
+\ ['mbfsanschi'	, '𝞆'],
+\ ['mbfsanspsi'	, '𝞇'],
+\ ['mbfsansomega'	, '𝞈'],
+\ ['mbfsanspartial'	, '𝞉'],
+\ ['mbfsansvarepsilon'	, '𝞊'],
+\ ['mbfsansvartheta'	, '𝞋'],
+\ ['mbfsansvarkappa'	, '𝞌'],
+\ ['mbfsansvarphi'	, '𝞍'],
+\ ['mbfsansvarrho'	, '𝞎'],
+\ ['mbfsansvarpi'	, '𝞏'],
+\ ['mbfitsansAlpha'	, '𝞐'],
+\ ['mbfitsansBeta'	, '𝞑'],
+\ ['mbfitsansGamma'	, '𝞒'],
+\ ['mbfitsansDelta'	, '𝞓'],
+\ ['mbfitsansEpsilon'	, '𝞔'],
+\ ['mbfitsansZeta'	, '𝞕'],
+\ ['mbfitsansEta'	, '𝞖'],
+\ ['mbfitsansTheta'	, '𝞗'],
+\ ['mbfitsansIota'	, '𝞘'],
+\ ['mbfitsansKappa'	, '𝞙'],
+\ ['mbfitsansLambda'	, '𝞚'],
+\ ['mbfitsansMu'	, '𝞛'],
+\ ['mbfitsansNu'	, '𝞜'],
+\ ['mbfitsansXi'	, '𝞝'],
+\ ['mbfitsansOmicron'	, '𝞞'],
+\ ['mbfitsansPi'	, '𝞟'],
+\ ['mbfitsansRho'	, '𝞠'],
+\ ['mbfitsansvarTheta'	, '𝞡'],
+\ ['mbfitsansSigma'	, '𝞢'],
+\ ['mbfitsansTau'	, '𝞣'],
+\ ['mbfitsansUpsilon'	, '𝞤'],
+\ ['mbfitsansPhi'	, '𝞥'],
+\ ['mbfitsansChi'	, '𝞦'],
+\ ['mbfitsansPsi'	, '𝞧'],
+\ ['mbfitsansOmega'	, '𝞨'],
+\ ['mbfitsansnabla'	, '𝞩'],
+\ ['mbfitsansalpha'	, '𝞪'],
+\ ['mbfitsansbeta'	, '𝞫'],
+\ ['mbfitsansgamma'	, '𝞬'],
+\ ['mbfitsansdelta'	, '𝞭'],
+\ ['mbfitsansepsilon'	, '𝞮'],
+\ ['mbfitsanszeta'	, '𝞯'],
+\ ['mbfitsanseta'	, '𝞰'],
+\ ['mbfitsanstheta'	, '𝞱'],
+\ ['mbfitsansiota'	, '𝞲'],
+\ ['mbfitsanskappa'	, '𝞳'],
+\ ['mbfitsanslambda'	, '𝞴'],
+\ ['mbfitsansmu'	, '𝞵'],
+\ ['mbfitsansnu'	, '𝞶'],
+\ ['mbfitsansxi'	, '𝞷'],
+\ ['mbfitsansomicron'	, '𝞸'],
+\ ['mbfitsanspi'	, '𝞹'],
+\ ['mbfitsansrho'	, '𝞺'],
+\ ['mbfitsansvarsigma'	, '𝞻'],
+\ ['mbfitsanssigma'	, '𝞼'],
+\ ['mbfitsanstau'	, '𝞽'],
+\ ['mbfitsansupsilon'	, '𝞾'],
+\ ['mbfitsansphi'	, '𝞿'],
+\ ['mbfitsanschi'	, '𝟀'],
+\ ['mbfitsanspsi'	, '𝟁'],
+\ ['mbfitsansomega'	, '𝟂'],
+\ ['mbfitsanspartial'	, '𝟃'],
+\ ['mbfitsansvarepsilon'	, '𝟄'],
+\ ['mbfitsansvartheta'	, '𝟅'],
+\ ['mbfitsansvarkappa'	, '𝟆'],
+\ ['mbfitsansvarphi'	, '𝟇'],
+\ ['mbfitsansvarrho'	, '𝟈'],
+\ ['mbfitsansvarpi'	, '𝟉'],
+\ ['mfrakZ'	, 'ℨ'],
+\ ['turnediota'	, '℩'],
+\ ['aleph'	, 'ℵ'],
+\ ['beth'	, 'ℶ'],
+\ ['daleth'	, 'ℸ'],
+\ ['Bbbgamma'	, 'ℽ'],
+\ ['BbbGamma'	, 'ℾ'],
+\ ['BbbPi'	, 'ℿ'],
+\ ['mathcal{A}'	, '𝓐'],
+\ ['mathcal{B}'	, '𝓑'],
+\ ['mathcal{C}'	, '𝓒'],
+\ ['mathcal{D}'	, '𝓓'],
+\ ['mathcal{E}'	, '𝓔'],
+\ ['mathcal{F}'	, '𝓕'],
+\ ['mathcal{G}'	, '𝓖'],
+\ ['mathcal{H}'	, '𝓗'],
+\ ['mathcal{I}'	, '𝓘'],
+\ ['mathcal{J}'	, '𝓙'],
+\ ['mathcal{K}'	, '𝓚'],
+\ ['mathcal{L}'	, '𝓛'],
+\ ['mathcal{M}'	, '𝓜'],
+\ ['mathcal{N}'	, '𝓝'],
+\ ['mathcal{O}'	, '𝓞'],
+\ ['mathcal{P}'	, '𝓟'],
+\ ['mathcal{Q}'	, '𝓠'],
+\ ['mathcal{R}'	, '𝓡'],
+\ ['mathcal{S}'	, '𝓢'],
+\ ['mathcal{T}'	, '𝓣'],
+\ ['mathcal{U}'	, '𝓤'],
+\ ['mathcal{V}'	, '𝓥'],
+\ ['mathcal{W}'	, '𝓦'],
+\ ['mathcal{X}'	, '𝓧'],
+\ ['mathcal{Y}'	, '𝓨'],
+\ ['mathcal{Z}'	, '𝓩'],
+\ ['mathcal{a}'	, '𝓪'],
+\ ['mathcal{b}'	, '𝓫'],
+\ ['mathcal{c}'	, '𝓬'],
+\ ['mathcal{d}'	, '𝓭'],
+\ ['mathcal{e}'	, '𝓮'],
+\ ['mathcal{f}'	, '𝓯'],
+\ ['mathcal{g}'	, '𝓰'],
+\ ['mathcal{h}'	, '𝓱'],
+\ ['mathcal{i}'	, '𝓲'],
+\ ['mathcal{j}'	, '𝓳'],
+\ ['mathcal{k}'	, '𝓴'],
+\ ['mathcal{l}'	, '𝓵'],
+\ ['mathcal{m}'	, '𝓶'],
+\ ['mathcal{n}'	, '𝓷'],
+\ ['mathcal{o}'	, '𝓸'],
+\ ['mathcal{p}'	, '𝓹'],
+\ ['mathcal{q}'	, '𝓺'],
+\ ['mathcal{r}'	, '𝓻'],
+\ ['mathcal{s}'	, '𝓼'],
+\ ['mathcal{t}'	, '𝓽'],
+\ ['mathcal{u}'	, '𝓾'],
+\ ['mathcal{v}'	, '𝓿'],
+\ ['mathcal{w}'	, '𝔀'],
+\ ['mathcal{x}'	, '𝔁'],
+\ ['mathcal{y}'	, '𝔂'],
+\ ['mathcal{z}'	, '𝔃'],
+\ ['mathbb{A}'	, '𝔸'],
+\ ['mathbb{B}'	, '𝔹'],
+\ ['mathbb{C}'	, 'ℂ'],
+\ ['mathbb{D}'	, '𝔻'],
+\ ['mathbb{E}'	, '𝔼'],
+\ ['mathbb{F}'	, '𝔽'],
+\ ['mathbb{G}'	, '𝔾'],
+\ ['mathbb{H}'	, 'ℍ'],
+\ ['mathbb{I}'	, '𝕀'],
+\ ['mathbb{J}'	, '𝕁'],
+\ ['mathbb{K}'	, '𝕂'],
+\ ['mathbb{L}'	, '𝕃'],
+\ ['mathbb{M}'	, '𝕄'],
+\ ['mathbb{N}'	, 'ℕ'],
+\ ['mathbb{O}'	, '𝕆'],
+\ ['mathbb{P}'	, 'ℙ'],
+\ ['mathbb{Q}'	, 'ℚ'],
+\ ['mathbb{R}'	, 'ℝ'],
+\ ['mathbb{S}'	, '𝕊'],
+\ ['mathbb{T}'	, '𝕋'],
+\ ['mathbb{U}'	, '𝕌'],
+\ ['mathbb{V}'	, '𝕍'],
+\ ['mathbb{W}'	, '𝕎'],
+\ ['mathbb{X}'	, '𝕏'],
+\ ['mathbb{Y}'	, '𝕐'],
+\ ['mathbb{Z}'	, 'ℤ'],
+\ ['mathbb{a}'	, '𝕒'],
+\ ['mathbb{b}'	, '𝕓'],
+\ ['mathbb{c}'	, '𝕔'],
+\ ['mathbb{d}'	, '𝕕'],
+\ ['mathbb{e}'	, '𝕖'],
+\ ['mathbb{f}'	, '𝕗'],
+\ ['mathbb{g}'	, '𝕘'],
+\ ['mathbb{h}'	, '𝕙'],
+\ ['mathbb{i}'	, '𝕚'],
+\ ['mathbb{j}'	, '𝕛'],
+\ ['mathbb{k}'	, '𝕜'],
+\ ['mathbb{l}'	, '𝕝'],
+\ ['mathbb{m}'	, '𝕞'],
+\ ['mathbb{n}'	, '𝕟'],
+\ ['mathbb{o}'	, '𝕠'],
+\ ['mathbb{p}'	, '𝕡'],
+\ ['mathbb{q}'	, '𝕢'],
+\ ['mathbb{r}'	, '𝕣'],
+\ ['mathbb{s}'	, '𝕤'],
+\ ['mathbb{t}'	, '𝕥'],
+\ ['mathbb{u}'	, '𝕦'],
+\ ['mathbb{v}'	, '𝕧'],
+\ ['mathbb{w}'	, '𝕨'],
+\ ['mathbb{x}'	, '𝕩'],
+\ ['mathbb{y}'	, '𝕪'],
+\ ['mathbb{z}'	, '𝕫'],
+\ ['mathbf{A}'	, '𝔸'],
+\ ['mathbf{B}'	, '𝔹'],
+\ ['mathbf{C}'	, 'ℂ'],
+\ ['mathbf{D}'	, '𝔻'],
+\ ['mathbf{E}'	, '𝔼'],
+\ ['mathbf{F}'	, '𝔽'],
+\ ['mathbf{G}'	, '𝔾'],
+\ ['mathbf{H}'	, 'ℍ'],
+\ ['mathbf{I}'	, '𝕀'],
+\ ['mathbf{J}'	, '𝕁'],
+\ ['mathbf{K}'	, '𝕂'],
+\ ['mathbf{L}'	, '𝕃'],
+\ ['mathbf{M}'	, '𝕄'],
+\ ['mathbf{N}'	, 'ℕ'],
+\ ['mathbf{O}'	, '𝕆'],
+\ ['mathbf{P}'	, 'ℙ'],
+\ ['mathbf{Q}'	, 'ℚ'],
+\ ['mathbf{R}'	, 'ℝ'],
+\ ['mathbf{S}'	, '𝕊'],
+\ ['mathbf{T}'	, '𝕋'],
+\ ['mathbf{U}'	, '𝕌'],
+\ ['mathbf{V}'	, '𝕍'],
+\ ['mathbf{W}'	, '𝕎'],
+\ ['mathbf{X}'	, '𝕏'],
+\ ['mathbf{Y}'	, '𝕐'],
+\ ['mathbf{Z}'	, 'ℤ'],
+\ ['mathbf{a}'	, '𝕒'],
+\ ['mathbf{b}'	, '𝕓'],
+\ ['mathbf{c}'	, '𝕔'],
+\ ['mathbf{d}'	, '𝕕'],
+\ ['mathbf{e}'	, '𝕖'],
+\ ['mathbf{f}'	, '𝕗'],
+\ ['mathbf{g}'	, '𝕘'],
+\ ['mathbf{h}'	, '𝕙'],
+\ ['mathbf{i}'	, '𝕚'],
+\ ['mathbf{j}'	, '𝕛'],
+\ ['mathbf{k}'	, '𝕜'],
+\ ['mathbf{l}'	, '𝕝'],
+\ ['mathbf{m}'	, '𝕞'],
+\ ['mathbf{n}'	, '𝕟'],
+\ ['mathbf{o}'	, '𝕠'],
+\ ['mathbf{p}'	, '𝕡'],
+\ ['mathbf{q}'	, '𝕢'],
+\ ['mathbf{r}'	, '𝕣'],
+\ ['mathbf{s}'	, '𝕤'],
+\ ['mathbf{t}'	, '𝕥'],
+\ ['mathbf{u}'	, '𝕦'],
+\ ['mathbf{v}'	, '𝕧'],
+\ ['mathbf{w}'	, '𝕨'],
+\ ['mathbf{x}'	, '𝕩'],
+\ ['mathbf{y}'	, '𝕪'],
+\ ['mathbf{z}'	, '𝕫']]
+
+  for texmath in s:texMathList
+   exe "syn match texMathSymbol '\\\\".texmath[0]."\\>' contained conceal cchar=".texmath[1]
+  endfor
+
+  if &ambw == "double"
+   syn match texMathSymbol '\\gg\>'			contained conceal cchar=≫
+   syn match texMathSymbol '\\ll\>'			contained conceal cchar=≪
+  else
+   syn match texMathSymbol '\\gg\>'			contained conceal cchar=⟫
+   syn match texMathSymbol '\\ll\>'			contained conceal cchar=⟪
+  endif
+ endif
+
+ " Greek {{{2
+ if s:tex_conceal =~ 'g'
+  fun! s:Greek(group,pat,cchar)
+    exe 'syn match '.a:group." '".a:pat."' contained conceal cchar=".a:cchar
+  endfun
+  call s:Greek('texGreek','\\alpha\>'		,'α')
+  call s:Greek('texGreek','\\beta\>'		,'β')
+  call s:Greek('texGreek','\\gamma\>'		,'γ')
+  call s:Greek('texGreek','\\delta\>'		,'δ')
+  call s:Greek('texGreek','\\epsilon\>'		,'ϵ')
+  call s:Greek('texGreek','\\varepsilon\>'	,'ε')
+  call s:Greek('texGreek','\\zeta\>'		,'ζ')
+  call s:Greek('texGreek','\\eta\>'		,'η')
+  call s:Greek('texGreek','\\theta\>'		,'θ')
+  call s:Greek('texGreek','\\vartheta\>'		,'ϑ')
+  call s:Greek('texGreek','\\kappa\>'		,'κ')
+  call s:Greek('texGreek','\\lambda\>'		,'λ')
+  call s:Greek('texGreek','\\mu\>'		,'μ')
+  call s:Greek('texGreek','\\nu\>'		,'ν')
+  call s:Greek('texGreek','\\xi\>'		,'ξ')
+  call s:Greek('texGreek','\\pi\>'		,'π')
+  call s:Greek('texGreek','\\varpi\>'		,'ϖ')
+  call s:Greek('texGreek','\\rho\>'		,'ρ')
+  call s:Greek('texGreek','\\varrho\>'		,'ϱ')
+  call s:Greek('texGreek','\\sigma\>'		,'σ')
+  call s:Greek('texGreek','\\varsigma\>'		,'ς')
+  call s:Greek('texGreek','\\tau\>'		,'τ')
+  call s:Greek('texGreek','\\upsilon\>'		,'υ')
+  call s:Greek('texGreek','\\phi\>'		,'φ')
+  call s:Greek('texGreek','\\varphi\>'		,'ϕ')
+  call s:Greek('texGreek','\\chi\>'		,'χ')
+  call s:Greek('texGreek','\\psi\>'		,'ψ')
+  call s:Greek('texGreek','\\omega\>'		,'ω')
+  call s:Greek('texGreek','\\Gamma\>'		,'Γ')
+  call s:Greek('texGreek','\\Delta\>'		,'Δ')
+  call s:Greek('texGreek','\\Theta\>'		,'Θ')
+  call s:Greek('texGreek','\\Lambda\>'		,'Λ')
+  call s:Greek('texGreek','\\Xi\>'		,'Χ')
+  call s:Greek('texGreek','\\Pi\>'		,'Π')
+  call s:Greek('texGreek','\\Sigma\>'		,'Σ')
+  call s:Greek('texGreek','\\Upsilon\>'		,'Υ')
+  call s:Greek('texGreek','\\Phi\>'		,'Φ')
+  call s:Greek('texGreek','\\Psi\>'		,'Ψ')
+  call s:Greek('texGreek','\\Omega\>'		,'Ω')
+  delfun s:Greek
+ endif
+
+ " Superscripts/Subscripts {{{2
+ if s:tex_conceal =~ 's'
+  syn region texSuperscript	matchgroup=Delimiter start='\^{'	end='}'	contained concealends contains=texSuperscripts,texStatement,texSubscript,texSuperscript,texMathMatcher
+  syn region texSubscript	matchgroup=Delimiter start='_{'		end='}'	contained concealends contains=texSubscripts,texStatement,texSubscript,texSuperscript,texMathMatcher
+  fun! s:SuperSub(group,leader,pat,cchar)
+    exe 'syn match '.a:group." '".a:leader.a:pat."' contained conceal cchar=".a:cchar
+    exe 'syn match '.a:group."s '".a:pat."' contained conceal cchar=".a:cchar.' nextgroup='.a:group.'s'
+  endfun
+  call s:SuperSub('texSuperscript','\^','0','⁰')
+  call s:SuperSub('texSuperscript','\^','1','¹')
+  call s:SuperSub('texSuperscript','\^','2','²')
+  call s:SuperSub('texSuperscript','\^','3','³')
+  call s:SuperSub('texSuperscript','\^','4','⁴')
+  call s:SuperSub('texSuperscript','\^','5','⁵')
+  call s:SuperSub('texSuperscript','\^','6','⁶')
+  call s:SuperSub('texSuperscript','\^','7','⁷')
+  call s:SuperSub('texSuperscript','\^','8','⁸')
+  call s:SuperSub('texSuperscript','\^','9','⁹')
+  call s:SuperSub('texSuperscript','\^','a','ᵃ')
+  call s:SuperSub('texSuperscript','\^','b','ᵇ')
+  call s:SuperSub('texSuperscript','\^','c','ᶜ')
+  call s:SuperSub('texSuperscript','\^','d','ᵈ')
+  call s:SuperSub('texSuperscript','\^','e','ᵉ')
+  call s:SuperSub('texSuperscript','\^','f','ᶠ')
+  call s:SuperSub('texSuperscript','\^','g','ᵍ')
+  call s:SuperSub('texSuperscript','\^','h','ʰ')
+  call s:SuperSub('texSuperscript','\^','i','ⁱ')
+  call s:SuperSub('texSuperscript','\^','j','ʲ')
+  call s:SuperSub('texSuperscript','\^','k','ᵏ')
+  call s:SuperSub('texSuperscript','\^','l','ˡ')
+  call s:SuperSub('texSuperscript','\^','m','ᵐ')
+  call s:SuperSub('texSuperscript','\^','n','ⁿ')
+  call s:SuperSub('texSuperscript','\^','o','ᵒ')
+  call s:SuperSub('texSuperscript','\^','p','ᵖ')
+  call s:SuperSub('texSuperscript','\^','r','ʳ')
+  call s:SuperSub('texSuperscript','\^','s','ˢ')
+  call s:SuperSub('texSuperscript','\^','t','ᵗ')
+  call s:SuperSub('texSuperscript','\^','u','ᵘ')
+  call s:SuperSub('texSuperscript','\^','v','ᵛ')
+  call s:SuperSub('texSuperscript','\^','w','ʷ')
+  call s:SuperSub('texSuperscript','\^','x','ˣ')
+  call s:SuperSub('texSuperscript','\^','y','ʸ')
+  call s:SuperSub('texSuperscript','\^','z','ᶻ')
+  call s:SuperSub('texSuperscript','\^','A','ᴬ')
+  call s:SuperSub('texSuperscript','\^','B','ᴮ')
+  call s:SuperSub('texSuperscript','\^','D','ᴰ')
+  call s:SuperSub('texSuperscript','\^','E','ᴱ')
+  call s:SuperSub('texSuperscript','\^','G','ᴳ')
+  call s:SuperSub('texSuperscript','\^','H','ᴴ')
+  call s:SuperSub('texSuperscript','\^','I','ᴵ')
+  call s:SuperSub('texSuperscript','\^','J','ᴶ')
+  call s:SuperSub('texSuperscript','\^','K','ᴷ')
+  call s:SuperSub('texSuperscript','\^','L','ᴸ')
+  call s:SuperSub('texSuperscript','\^','M','ᴹ')
+  call s:SuperSub('texSuperscript','\^','N','ᴺ')
+  call s:SuperSub('texSuperscript','\^','O','ᴼ')
+  call s:SuperSub('texSuperscript','\^','P','ᴾ')
+  call s:SuperSub('texSuperscript','\^','R','ᴿ')
+  call s:SuperSub('texSuperscript','\^','T','ᵀ')
+  call s:SuperSub('texSuperscript','\^','U','ᵁ')
+  call s:SuperSub('texSuperscript','\^','W','ᵂ')
+  call s:SuperSub('texSuperscript','\^','+','⁺')
+  call s:SuperSub('texSuperscript','\^','-','⁻')
+  call s:SuperSub('texSuperscript','\^','<','˂')
+  call s:SuperSub('texSuperscript','\^','>','˃')
+  call s:SuperSub('texSuperscript','\^','/','ˊ')
+  call s:SuperSub('texSuperscript','\^','(','⁽')
+  call s:SuperSub('texSuperscript','\^',')','⁾')
+  call s:SuperSub('texSuperscript','\^','\.','˙')
+  call s:SuperSub('texSuperscript','\^','=','˭')
+  call s:SuperSub('texSubscript','_','0','₀')
+  call s:SuperSub('texSubscript','_','1','₁')
+  call s:SuperSub('texSubscript','_','2','₂')
+  call s:SuperSub('texSubscript','_','3','₃')
+  call s:SuperSub('texSubscript','_','4','₄')
+  call s:SuperSub('texSubscript','_','5','₅')
+  call s:SuperSub('texSubscript','_','6','₆')
+  call s:SuperSub('texSubscript','_','7','₇')
+  call s:SuperSub('texSubscript','_','8','₈')
+  call s:SuperSub('texSubscript','_','9','₉')
+  call s:SuperSub('texSubscript','_','a','ₐ')
+  call s:SuperSub('texSubscript','_','e','ₑ')
+  call s:SuperSub('texSubscript','_','i','ᵢ')
+  call s:SuperSub('texSubscript','_','o','ₒ')
+  call s:SuperSub('texSubscript','_','u','ᵤ')
+  call s:SuperSub('texSubscript','_','+','₊')
+  call s:SuperSub('texSubscript','_','-','₋')
+  call s:SuperSub('texSubscript','_','/','ˏ')
+  call s:SuperSub('texSubscript','_','(','₍')
+  call s:SuperSub('texSubscript','_',')','₎')
+  call s:SuperSub('texSubscript','_','\.','‸')
+  call s:SuperSub('texSubscript','_','r','ᵣ')
+  call s:SuperSub('texSubscript','_','v','ᵥ')
+  call s:SuperSub('texSubscript','_','x','ₓ')
+  call s:SuperSub('texSubscript','_','\\beta\>' ,'ᵦ')
+  call s:SuperSub('texSubscript','_','\\delta\>','ᵨ')
+  call s:SuperSub('texSubscript','_','\\phi\>'  ,'ᵩ')
+  call s:SuperSub('texSubscript','_','\\gamma\>','ᵧ')
+  call s:SuperSub('texSubscript','_','\\chi\>'  ,'ᵪ')
+  delfun s:SuperSub
+ endif
+
+ " Accented characters: {{{2
+ if s:tex_conceal =~ 'a'
+  if b:tex_stylish
+   syn match texAccent		"\\[bcdvuH][^a-zA-Z@]"me=e-1
+   syn match texLigature		"\\\([ijolL]\|ae\|oe\|ss\|AA\|AE\|OE\)[^a-zA-Z@]"me=e-1
+  else
+   fun! s:Accents(chr,...)
+     let i= 1
+     for accent in ["`","\\'","^",'"','\~','\.',"c","H","k","r","u","v"]
+      if i > a:0
+       break
+      endif
+      if strlen(a:{i}) == 0 || a:{i} == ' ' || a:{i} == '?'
+       let i= i + 1
+       continue
+      endif
+      if accent =~ '\a'
+       exe "syn match texAccent '".'\\'.accent.'\(\s*{'.a:chr.'}\|\s\+'.a:chr.'\)'."' conceal cchar=".a:{i}
+      else
+       exe "syn match texAccent '".'\\'.accent.'\s*\({'.a:chr.'}\|'.a:chr.'\)'."' conceal cchar=".a:{i}
+      endif
+      let i= i + 1
+     endfor
+   endfun
+   "                  \`  \'  \^  \"  \~  \.  \c  \H  \k  \r  \u  \v
+   call s:Accents('a','à','á','â','ä','ã',' ',' ',' ','ą','å','ă','ă')
+   call s:Accents('A','À','Á','Â','Ä','Ã',' ',' ',' ','Ą','Å','Ă','Ă')
+   call s:Accents('c',' ','ć','ĉ',' ',' ','ċ','ç',' ',' ',' ',' ','č')
+   call s:Accents('C',' ','Ć','Ĉ',' ',' ','Ċ','Ç',' ',' ',' ',' ','Č')
+   call s:Accents('d',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','ď')
+   call s:Accents('D',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ',' ','Ď')
+   call s:Accents('e','è','é','ê','ë','ẽ','ė','ȩ',' ','ę',' ','ĕ','ě')
+   call s:Accents('E','È','É','Ê','Ë','Ẽ','Ė','Ȩ',' ','Ę',' ','Ĕ','Ě')
+   call s:Accents('g',' ',' ',' ',' ',' ','ġ','ģ',' ',' ',' ','ğ',' ')
+   call s:Accents('G',' ',' ',' ',' ',' ','Ġ','Ģ',' ',' ',' ','Ğ',' ')
+   call s:Accents('i','ì','í','î','ï','ĩ','į',' ',' ',' ',' ','ĭ',' ')
+   call s:Accents('I','Ì','Í','Î','Ï','Ĩ','İ',' ',' ',' ',' ','Ĭ',' ')
+   call s:Accents('l',' ','ĺ','ľ',' ',' ',' ','ļ',' ',' ',' ',' ','ľ')
+   call s:Accents('L',' ','Ĺ','Ľ',' ',' ',' ','Ļ',' ',' ',' ',' ','Ľ')
+   call s:Accents('n',' ','ń',' ',' ','ñ',' ','ņ',' ',' ',' ',' ','ň')
+   call s:Accents('N',' ','Ń',' ',' ','Ñ',' ','Ņ',' ',' ',' ',' ','Ň')
+   call s:Accents('o','ò','ó','ô','ö','õ','ȯ',' ','ő','ǫ',' ','ŏ',' ')
+   call s:Accents('O','Ò','Ó','Ô','Ö','Õ','Ȯ',' ','Ő','Ǫ',' ','Ŏ',' ')
+   call s:Accents('r',' ','ŕ',' ',' ',' ',' ','ŗ',' ',' ',' ',' ','ř')
+   call s:Accents('R',' ','Ŕ',' ',' ',' ',' ','Ŗ',' ',' ',' ',' ','Ř')
+   call s:Accents('s',' ','ś','ŝ',' ',' ',' ','ş',' ',' ',' ',' ','š')
+   call s:Accents('S',' ','Ś','Ŝ',' ',' ',' ','Ş',' ',' ',' ',' ','Š')
+   call s:Accents('t',' ',' ',' ',' ',' ',' ','ţ',' ',' ',' ',' ','ť')
+   call s:Accents('T',' ',' ',' ',' ',' ',' ','Ţ',' ',' ',' ',' ','Ť')
+   call s:Accents('u','ù','ú','û','ü','ũ',' ',' ','ű',' ','ů','ŭ',' ')
+   call s:Accents('U','Ù','Ú','Û','Ü','Ũ',' ',' ','Ű',' ','Ů','Ŭ',' ')
+   call s:Accents('w',' ',' ','ŵ',' ',' ',' ',' ',' ',' ',' ',' ',' ')
+   call s:Accents('W',' ',' ','Ŵ',' ',' ',' ',' ',' ',' ',' ',' ',' ')
+   call s:Accents('y','ỳ','ý','ŷ','ÿ','ỹ',' ',' ',' ',' ',' ',' ',' ')
+   call s:Accents('Y','Ỳ','Ý','Ŷ','Ÿ','Ỹ',' ',' ',' ',' ',' ',' ',' ')
+   call s:Accents('z',' ','ź',' ',' ',' ','ż',' ',' ',' ',' ',' ','ž')
+   call s:Accents('Z',' ','Ź',' ',' ',' ','Ż',' ',' ',' ',' ',' ','Ž')
+   call s:Accents('\\i','ì','í','î','ï','ĩ','į',' ',' ',' ',' ','ĭ',' ')
+   "                  \`  \'  \^  \"  \~  \.  \c  \H  \k  \r  \u  \v
+   delfun s:Accents
+   syn match texAccent   '\\aa\>'	conceal cchar=å
+   syn match texAccent   '\\AA\>'	conceal cchar=Å
+   syn match texAccent	'\\o\>'		conceal cchar=ø
+   syn match texAccent	'\\O\>'		conceal cchar=Ø
+   syn match texLigature	'\\AE\>'	conceal cchar=Æ
+   syn match texLigature	'\\ae\>'	conceal cchar=æ
+   syn match texLigature	'\\oe\>'	conceal cchar=œ
+   syn match texLigature	'\\OE\>'	conceal cchar=Œ
+   syn match texLigature	'\\ss\>'	conceal cchar=ß
+  endif
+ endif
+endif
+
+" ---------------------------------------------------------------------
+" LaTeX synchronization: {{{1
+syn sync maxlines=200
+syn sync minlines=50
+
+syn  sync match texSyncStop			groupthere NONE		"%stopzone\>"
+zo
+" Synchronization: {{{1
+" The $..$ and $$..$$ make for impossible sync patterns
+" (one can't tell if a "$$" starts or stops a math zone by itself)
+" The following grouptheres coupled with minlines above
+" help improve the odds of good syncing.
+if !exists("tex_no_math")
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{abstract}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{center}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{description}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{enumerate}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{itemize}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{table}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\end{tabular}"
+ syn sync match texSyncMathZoneA		groupthere NONE		"\\\(sub\)*section\>"
+endif
+
+" ---------------------------------------------------------------------
+" Highlighting: {{{1
+if did_tex_syntax_inits == 1
+ let did_tex_syntax_inits= 2
+  " TeX highlighting groups which should share similar highlighting
+  if !exists("g:tex_no_error")
+   if !exists("tex_no_math")
+    HiLink texBadMath		texError
+    HiLink texMathDelimBad	texError
+    HiLink texMathError		texError
+    if !b:tex_stylish
+      HiLink texOnlyMath	texError
+    endif
+   endif
+   HiLink texError		Error
+  endif
+
+  HiLink texCite		texRefZone
+  HiLink texDefCmd		texDef
+  HiLink texDefName		texDef
+  HiLink texDocType		texCmdName
+  HiLink texDocTypeArgs		texCmdArgs
+  HiLink texInputFileOpt	texCmdArgs
+  HiLink texInputCurlies	texDelimiter
+  HiLink texLigature		texSpecialChar
+  if !exists("tex_no_math")
+   HiLink texMathDelimSet1	texMathDelim
+   HiLink texMathDelimSet2	texMathDelim
+   HiLink texMathDelimKey	texMathDelim
+   HiLink texMathMatcher	texMath
+   HiLink texAccent		texStatement
+   HiLink texGreek		texStatement
+   HiLink texSuperscript	texStatement
+   HiLink texSubscript		texStatement
+   HiLink texMathSymbol		texStatement
+   HiLink texMathZoneV		texMath
+   HiLink texMathZoneW		texMath
+   HiLink texMathZoneX		texMath
+   HiLink texMathZoneY		texMath
+   HiLink texMathZoneV		texMath
+   HiLink texMathZoneZ		texMath
+  endif
+  HiLink texSectionMarker	texCmdName
+  HiLink texSectionName		texSection
+  HiLink texSpaceCode		texStatement
+  HiLink texStyleStatement	texStatement
+  HiLink texTypeSize		texType
+  HiLink texTypeStyle		texType
+
+   " Basic TeX highlighting groups
+  HiLink texCmdArgs		Number
+  HiLink texCmdName		Statement
+  HiLink texComment		Comment
+  HiLink texDef			Statement
+  HiLink texDefParm		Special
+  HiLink texDelimiter		Delimiter
+  HiLink texInput		Special
+  HiLink texInputFile		Special
+  HiLink texLength		Number
+  HiLink texMath		Special
+  HiLink texMathDelim		Statement
+  HiLink texMathOper		Operator
+  HiLink texNewCmd		Statement
+  HiLink texNewEnv		Statement
+  HiLink texOption		Number
+  HiLink texRefZone		Special
+  HiLink texSection		PreCondit
+  HiLink texSpaceCodeChar	Special
+  HiLink texSpecialChar		SpecialChar
+  HiLink texStatement		Statement
+  HiLink texString		String
+  HiLink texTodo		Todo
+  HiLink texType		Type
+  HiLink texZone		PreCondit
+
+  delcommand HiLink
+endif
+
+" Current Syntax: {{{1
+unlet b:extfname
+let   b:current_syntax = "tex"
+
+syn match texMathSymbol '\\{' contained conceal cchar={
+syn match texMathSymbol '\\}' contained conceal cchar=}
+
+syn match texMathSymbol '\\frac{1}{2}' contained conceal cchar=½
+syn match texMathSymbol '\\limits' contained conceal
+syn match texMathSymbol '\\qquad' contained conceal
+syn match texMathSymbol '\\quad' contained conceal
+
+" vim: ts=8 fdm=marker

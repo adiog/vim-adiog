@@ -1,0 +1,12 @@
+:insert
+%% @author Aleksander Gajewski <adiog@brainfuck.pl>
+%% @copyright YEAR Exida
+%%   created:  CREATED
+%%   modified: never modified
+
+%% @doc
+
+-module(__MODULE__).
+-author('Aleksander Gajewski <adiog@brainfuck.pl>').
+-export([]).
+

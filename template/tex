@@ -1,0 +1,35 @@
+:insert
+% Copyright YEAR Aleksander Gajewski <adiog@brainfuck.pl>
+%   created:  CREATED
+%   modified: never modified
+
+\\documentclass[10pt,a4paper]{article}
+
+\\usepackage[utf8]{inputenc}
+
+\\usepackage[polish]{babel}
+
+\\usepackage{amsmath}
+
+\\usepackage{amsfonts}
+
+\\usepackage{polski}
+
+\\usepackage{amsthm}
+
+\\usepackage{graphicx}
+
+\\usepackage{enumerate}
+
+
+\\author{Aleksander Gajewski}
+
+\\title{}
+
+
+\\begin{document}
+
+
+\\end{document}
+
+

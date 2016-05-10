@@ -1,0 +1,9 @@
+:insert
+#!/usr/bin/env escript
+% Copyright YEAR Aleksander Gajewski <adiog@brainfuck.pl>
+%   created:  CREATED
+%   modified: never modified
+
+main(ListOfStrings) ->
+  ok.
+

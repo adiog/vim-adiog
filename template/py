@@ -1,0 +1,10 @@
+:insert
+#!/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright YEAR Aleksander Gajewski <adiog@brainfuck.pl>
+#   created:  CREATED
+#   modified: never modified
+
+if __name__ == "__main__":
+    main()
+
