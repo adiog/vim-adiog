@@ -1,6 +1,6 @@
 " vim
 " aleksander gajewski <adiog@brainfuck.pl>
-" modified: Tue 12 Apr 2016 07:37:10 AM CEST
+" modified: Tue 10 May 2016 03:44:21 PM CEST
 
 """ HELP
 " :h <topic>
@@ -388,8 +388,6 @@ set foldmethod=marker
 let g:NERDTreeMapOpenInTab = "t"
 let g:NERDTreeMapOpenInTabSilent = "T"
 let g:NERDTreeMapOpenSplit = "i"
-let g:NERDTreeMapOpenVSplit", "s"
-let g:NERDTreeMapPreview = "g" . NERDTreeMapActivateNode
-let g:NERDTreeMapPreviewSplit = "g" . NERDTreeMapOpenSplit
-let g:NERDTreeMapPreviewVSplit =  "g" . NERDTreeMapOpenVSplit
+let g:NERDTreeMapOpenVSplit = "s"
 let g:NERDTreeMapRefresh = "r"
+
