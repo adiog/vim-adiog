@@ -1,6 +1,6 @@
 " vim
 " aleksander gajewski <adiog@brainfuck.pl>
-" modified: Tue 10 May 2016 03:44:21 PM CEST
+" modified: Tue 24 May 2016 12:34:53 PM CEST
 
 """ HELP
 " :h <topic>
@@ -104,10 +104,10 @@ nnoremap <silent> <F4>      :TagbarToggle<CR>
 set pastetoggle=<F8>
 " FX 1-4 ESC
 "inoremap <silent> <ESC><F7> <ESC>:tabnew $MYVIMRC<CR>a
-inoremap <silent> <ESC><F7> <ESC>:tabnew $HOME/.vim/vim-adiog/.vimrc<CR>a
-nnoremap <silent> <ESC><F7>      :tabnew $HOME/.vim/vim-adiog/.vimrc<CR>
-inoremap <silent> <ESC><F8> <ESC>:tabnew $HOME/.vim/vim-adiog/plugin/adiog.vim<CR>a
-nnoremap <silent> <ESC><F8>      :tabnew $HOME/.vim/vim-adiog/plugin/adiog.vim<CR>
+inoremap <silent> <ESC><F7> <ESC>:tabnew $HOME/.vim/bundle/vim-adiog/.vimrc<CR>a
+nnoremap <silent> <ESC><F7>      :tabnew $HOME/.vim/bundle/vim-adiog/.vimrc<CR>
+inoremap <silent> <ESC><F8> <ESC>:tabnew $HOME/.vim/bundle/vim-adiog/plugin/adiog.vim<CR>a
+nnoremap <silent> <ESC><F8>      :tabnew $HOME/.vim/bundle/vim-adiog/plugin/adiog.vim<CR>
 nnoremap <silent> <ESC><F9>      :! $HOME/.vim/vim-adiog/reload.sh<CR>
 "nnoremap <silent> <ESC><F3> :call g:NextLang()<CR>
 "inoremap <silent> <ESC><F4> <ESC>:set spell<CR>:execute "split ".&spf<CR>
@@ -385,9 +385,9 @@ set foldmethod=marker
 "
 "
 "
-let g:NERDTreeMapOpenInTab = "t"
-let g:NERDTreeMapOpenInTabSilent = "T"
-let g:NERDTreeMapOpenSplit = "i"
-let g:NERDTreeMapOpenVSplit = "s"
-let g:NERDTreeMapRefresh = "r"
+let g:NERDTreeMapOpenInTab = "l"
+let g:NERDTreeMapOpenInTabSilent = "L"
+let g:NERDTreeMapOpenSplit = "c"
+let g:NERDTreeMapOpenVSplit = "r"
+let g:NERDTreeMapRefresh = "X"
 
