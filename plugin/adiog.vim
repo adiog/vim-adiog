@@ -1,6 +1,6 @@
 " vim
 " aleksander gajewski <adiog@brainfuck.pl>
-" modified: Tue 24 May 2016 12:34:53 PM CEST
+" modified: Thu 26 Jan 2017 09:16:49 PM CET
 
 """ HELP
 " :h <topic>
@@ -358,7 +358,7 @@ endfunction
 
 function! SetColoPaper()
   set background=light
-  let g:airline_theme="PaperColor"
+  let g:airline_theme="papercolor"
   colo PaperColor
   highlight! ColorColumn ctermbg=254 guibg=lightgrey
 endfunction
