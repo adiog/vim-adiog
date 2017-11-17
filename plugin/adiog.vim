@@ -1,6 +1,6 @@
 " vim
 " aleksander gajewski <adiog@brainfuck.pl>
-" modified: Thu 26 Jan 2017 09:16:49 PM CET
+" modified: Fri 17 Nov 2017 11:50:15 AM CET
 
 """ HELP
 " :h <topic>
@@ -77,10 +77,10 @@ vnoremap /@ :Tabularize /
 
 " Fx mappings {{{
 " FX 1-4
-nnoremap <silent> <F1>      :NERDTreeTabsToggle<CR>
-"inoremap <silent> <F1> <ESC>:NERDTreeTabsToggle<CR>
-"nnoremap <silent> <C-F1>      :NERDTreeFind<CR>
-"inoremap <silent> <C-F1> <ESC>:NERDTreeFind<CR>
+nnoremap <silent> <F1>      :NERDTreeToggle<CR>
+inoremap <silent> <F1> <ESC>:NERDTreeToggle<CR>
+nnoremap <silent> <C-F1>      :NERDTreeFind<CR>
+inoremap <silent> <C-F1> <ESC>:NERDTreeFind<CR>
 
 inoremap <silent> <F2> <ESC>mX:w<CR>`Xa
 nnoremap <silent> <F2>      mX:w<CR>`X
@@ -330,8 +330,6 @@ vnoremap <A-h> <<<ESC>gv
 " }}}
 
 
-
-
 " set 256 terminal colors
 set t_Co=256
 
@@ -363,31 +361,24 @@ function! SetColoPaper()
   highlight! ColorColumn ctermbg=254 guibg=lightgrey
 endfunction
 
+function! SetColoAdiog()
+  set background=light
+  let g:airline_theme="angr"
+  colo adiog
+  highlight! ColorColumn ctermbg=4 guibg=darkgrey
+endfunction
+
 if version > 730
   set colorcolumn=81,121,122
 endif
 
+nnoremap <F6> :call SetColoAdiog()<CR>
 nnoremap <F7> :call SetColoMustang()<CR>
 nnoremap <F8> :call SetColoPaper()<CR>
 nnoremap <F9> :call SetColoSummerfruit()<CR>
-"nnoremap <F10> :call SetColoAnotherdark()<CR> 
 nnoremap <F11> :call NextColor(-1)<CR>
 nnoremap <F12> :call NextColor(1)<CR>
 
-call SetColoPaper()
+call SetColoAdiog()
 
 set foldmethod=marker
-
-"if has('unix')
-"let g:PaperColor_Dark_Override = { 'background' : '#1c1c1c', 'cursorline' : '#abcdef', 'matchparen' : '#3a3a3a', 'comment' : '#5f875f' }
-
-"let g:PaperColor_Light_Override = { 'background' : '#abcdef', 'cursorline' : '#dfdfff', 'matchparen' : '#d6d6d6' , 'comment' : '#8e908c' }
-"
-"
-"
-let g:NERDTreeMapOpenInTab = "l"
-let g:NERDTreeMapOpenInTabSilent = "L"
-let g:NERDTreeMapOpenSplit = "c"
-let g:NERDTreeMapOpenVSplit = "r"
-let g:NERDTreeMapRefresh = "X"
-
