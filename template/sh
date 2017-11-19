@@ -4,30 +4,32 @@
 #   created:  CREATED
 #   modified: never modified
 
-# BASH_CLEANUP {{{
-BASH_CLEANUP_FILE=`mktemp`
+# BASH CLEANUP {{{
+# PRIVATE:
+BASH_TMPDIR=/dev/shm/
+BASH_MKTEMP="mktemp --tmpdir=$BASH_TMPDIR"
+BASH_CLEANUP_FILE=`$BASH_MKTEMP`
 trap BASH_CLEANUP EXIT
 
 function BASH_CLEANUP() {
-  BASH_CLEANUP_FILE_REV=`mktemp`
-  tac $BASH_CLEANUP_FILE > $BASH_CLEANUP_FILE_REV
-  . $BASH_CLEANUP_FILE_REV
-  rm $BASH_CLEANUP_FILE $BASH_CLEANUP_FILE_REV
+  tac $BASH_CLEANUP_FILE | bash
+  rm $BASH_CLEANUP_FILE
 }
 
-function BASH_FINALLY() {
+# PUBLIC:
+function FINALLY() {
   echo "$*" >> $BASH_CLEANUP_FILE
 }
 
-function BASH_MKTEMP() {
-  BASH_TMP=`mktemp`
-  echo "rm $BASH_TMP" >> $BASH_CLEANUP_FILE
+function MKTEMP() {
+  BASH_TMP=`$BASH_MKTEMP`
+  FINALLY "rm $BASH_TMP"
   echo $BASH_TMP
 }
 
-function BASH_MKTEMP_DIR() {
-  BASH_TMP=`mktemp -d`
-  echo "rm -fr $BASH_TMP" >> $BASH_CLEANUP_FILE
+function MKTEMP_DIR() {
+  BASH_TMP=`$BASH_MKTEMP -d`
+  FINALLY "rm -fr $BASH_TMP"
   echo $BASH_TMP
 }
 # }}}
