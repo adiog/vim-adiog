@@ -1,6 +1,6 @@
 " vim
 " aleksander gajewski <adiog@brainfuck.pl>
-" modified: Fri 17 Nov 2017 11:50:15 AM CET
+" modified: Sat 02 Dec 2017 11:37:48 PM CET
 
 """ HELP
 " :h <topic>
@@ -79,8 +79,8 @@ vnoremap /@ :Tabularize /
 " FX 1-4
 nnoremap <silent> <F1>      :NERDTreeToggle<CR>
 inoremap <silent> <F1> <ESC>:NERDTreeToggle<CR>
-nnoremap <silent> <C-F1>      :NERDTreeFind<CR>
-inoremap <silent> <C-F1> <ESC>:NERDTreeFind<CR>
+nnoremap <silent> <S-F1>      :NERDTreeFind<CR>
+inoremap <silent> <S-F1> <ESC>:NERDTreeFind<CR>
 
 inoremap <silent> <F2> <ESC>mX:w<CR>`Xa
 nnoremap <silent> <F2>      mX:w<CR>`X

@@ -284,6 +284,15 @@ call <SID>X( "NERDTreeCWD"             , "8faa50" , "353535" , "bold" )
 call <SID>X( "NERDTreeBookmarksHeader" , "e7bc46" , "353535" , "bold" )
 call <SID>X( "NERDTreeBookmark"        , "e7bc46" , "353535" , "none" )
 
+call <SID>X( "DiffAdd"                 , "353535" , "a0e26b" , "bold" )
+call <SID>X( "DiffDelete"              , "353535" , "ff9359" , "none" )
+call <SID>X( "DiffChange"              , "353535" , "fffb77" , "none" )
+call <SID>X( "DiffText"                , "353535" , "a0e26b" , "bold" )
+
+"optionally use custom color theme just in vimdiff mode
+"if &diff
+"    colorscheme desert
+"endif
 
 " delete functions {{{
 delf <SID>X
